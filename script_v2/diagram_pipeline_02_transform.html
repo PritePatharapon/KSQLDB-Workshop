@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline 2: Transformation Pipeline</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #8e24aa;
+        }
+
+        .desc {
+            text-align: center;
+            color: #555;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Pipeline 2: Transformation Pipeline (String -> Struct)</h2>
+        <p class="desc">Flow สำหรับรับข้อมูลดิบแบบ String (Pipe Delimited) และแปลงเป็น Structured Data</p>
+        <div class="mermaid">
+            graph LR
+            %% Styling
+            classDef raw fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+            classDef stg fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+
+            subgraph RAW [RAW INPUT]
+            RawString(BAAC_RAW_STRING_INPUT_ST):::raw
+            note1["Format: 'TXN|CODE|AMT|ACC|DATE'"]:::raw
+            end
+
+            subgraph TRANSFORM [TRANSFORMATION]
+            TransformedST(BAAC_POC_MFEC_TRANSFORMED_ST):::stg
+            note2["Logic:<br />1. SPLIT('|')<br />2. CAST(Double)<br />3. STRUCT Build"]:::stg
+            end
+
+            RawString --- note1
+            TransformedST --- note2
+
+            RawString ==> TransformedST
+        </div>
+    </div>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>

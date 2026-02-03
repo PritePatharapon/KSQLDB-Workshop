@@ -8,16 +8,9 @@
   <h3 align="center">KSQLDB Workshop</h3>
 
   <p align="center">
-    สุดยอดคู่มือการเรียนรู้ KSQLDB แบบ Step-by-Step
+    Advanced Data Pipeline Workshop with KSQLDB
     <br />
-    <a href="#getting-started"><strong>สำรวจเอกสาร »</strong></a>
-    <br />
-    <br />
-    <a href="#">ดู Demo</a>
-    ·
-    <a href="#">แจ้งปัญหา</a>
-    ·
-    <a href="#">ขอฟีเจอร์ใหม่</a>
+    <a href="#getting-started"><strong>Explore Docs »</strong></a>
   </p>
 </div>
 
@@ -25,100 +18,190 @@
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/github_username/repo_name.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+[![KSQLDB](https://img.shields.io/badge/ksqlDB-0.28.2-000000?style=flat&logo=ksqldb&logoColor=white)](https://ksqldb.io/)
+[![Kafka](https://img.shields.io/badge/Apache_Kafka-3.6.0-231F20?style=flat&logo=apache-kafka&logoColor=white)](https://kafka.apache.org/)
 
 </div>
 
----
 
 <!-- TABLE OF CONTENTS -->
-<details>
-  <summary>สารบัญ (คลิกเพื่อขยาย)</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">เกี่ยวกับโปรเจกต์</a>
-      <ul>
-        <li><a href="#built-with">เทคโนโลยีที่ใช้</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">เริ่มต้นใช้งาน</a>
-      <ul>
-        <li><a href="#prerequisites">สิ่งที่ต้องมี</a></li>
-        <li><a href="#installation">การติดตั้ง</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">วิธีการใช้งาน</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contact">ติดต่อ</a></li>
-  </ol>
-</details>
 
-<!-- ABOUT THE PROJECT -->
-## 🚀 เกี่ยวกับโปรเจกต์
+## 🚀 Example Data Pipeline
 
-Workshop นี้ถูกออกแบบมาเพื่อช่วยให้คุณเข้าใจการทำงานของ KSQLDB ตั้งแต่พื้นฐานจนถึงการประยุกต์ใช้งานจริง ผ่านการลงมือทำ Hands-on Lab ที่เข้าใจง่าย
+### 1. Overview Data Pipeline
+**คำอธิบาย:**
+ภาพรวมของ Flow ข้อมูลใน Workshop นี้ จะเป็นการรับข้อมูล Transaction เข้ามา ทำการแปลงข้อมูล (Transform) ตรวจสอบความถูกต้อง (Validate) และส่งผลลัพธ์ออกไป
 
-จุดเด่นของ Workshop:
-* 🎯 **Hands-on**: เน้นลงมือทำจริง ไม่ใช่แค่ทฤษฎี
-* ⚡ **Fast**: เนื้อหากระชับ เรียนรู้ไว
-* 🛠️ **Real-world**: ตัวอย่าง Use Case จากสถานการณ์จริง
-
-<p align="right">(<a href="#readme-top">กลับไปด้านบน</a>)</p>
-
-<!-- BUILT WITH -->
-### 🛠️ เทคโนโลยีที่ใช้
-
-* [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-* [![Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white)](https://kafka.apache.org/)
-* [![KSQLDB](https://img.shields.io/badge/ksqlDB-000000?style=for-the-badge&logo=ksqldb&logoColor=white)](https://ksqldb.io/)
-
-<!-- GETTING STARTED -->
-## ⚡ เริ่มต้นใช้งาน
-
-ทำตามขั้นตอนด้านล่างเพื่อรัน Environment สำหรับ Workshop นี้
-
-### สิ่งที่ต้องมี
-
-* Docker Desktop
-* Git
-
-### การติดตั้ง
-
-1. Clone repo
-   ```sh
-   git clone https://github.com/your_username/KSQLDB-Workshop.git
-   ```
-2. เข้าสู่โฟลเดอร์
-   ```sh
-   cd KSQLDB-Workshop
-   ```
-3. รัน Docker Compose
-   ```sh
-   docker-compose up -d
-   ```
-
-<!-- USAGE EXAMPLES -->
-## 💻 ตัวอย่างการใช้งาน
-
-ตัวอย่างคำสั่งพื้นฐานในการสร้าง Stream:
-
+**Script:**
 ```sql
-CREATE STREAM users_stream (id VARCHAR, name VARCHAR) 
-  WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON');
+-- ดู Topic ทั้งหมดที่มีในระบบ เพื่อสำรวจ Source Data
+SHOW TOPICS;
 ```
 
-<p align="right">(<a href="#readme-top">กลับไปด้านบน</a>)</p>
+### 2. Create Source Stream and Table
+**คำอธิบาย:**
+การสร้าง Stream และ Table เพื่อ map เข้ากับ Kafka Topic ที่มีอยู่แล้ว เพื่อให้ ksqlDB สามารถอ่านข้อมูลได้
 
-<!-- AUTHOR -->
-## 👤 ผู้จัดทำ
+**Script:**
+```sql
+-- สร้าง Source Stream จาก Topic 'raw_transactions'
+CREATE STREAM raw_txns (
+    txn_id VARCHAR,
+    amount DOUBLE,
+    user_id VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'raw_transactions',
+    VALUE_FORMAT = 'JSON'
+);
+```
 
-**Workshop Team**
-* Website: [example.com](https://example.com)
+### 3. Data STG (Cast, Delimited, Field name)
+**คำอธิบาย:**
+ขั้นตอน Staging Data เพื่อทำความสะอาดและจัดรูปแบบข้อมูล:
+*   **Cast**: เปลี่ยน type เช่น String เป็น Int
+*   **Delimited**: แยกข้อมูลที่ติดกัน
+*   **Field name**: เปลี่ยนชื่อ Column ให้สื่อความหมาย
+
+**Script:**
+```sql
+-- สร้าง Stream ใหม่ที่ Clean ข้อมูลแล้ว
+CREATE STREAM stg_txns AS
+SELECT 
+    CAST(txn_id AS INT) AS id,
+    amount,
+    UCASE(user_id) AS user_account_id
+FROM raw_txns
+EMIT CHANGES;
+```
+
+### 4. Data STG ksqlDB Join
+**คำอธิบาย:**
+การรวมข้อมูล (Join) ระหว่าง Data Sources เพื่อเติมเต็มข้อมูลให้สมบูรณ์ (Enrichment) โดยมี 3 รูปแบบหลัก: Stream-Stream, Stream-Table, Table-Table
+
+**Script:**
+```sql
+-- ตัวอย่าง Stream-Table Join (Enrich Transaction ด้วย User Profile)
+CREATE STREAM enriched_txns AS
+SELECT 
+    t.id AS txn_id,
+    t.amount,
+    u.name AS user_name
+FROM stg_txns t
+LEFT JOIN user_profiles u ON t.user_account_id = u.user_id
+EMIT CHANGES;
+```
+
+### 5. Data STG Window Aggregate
+**คำอธิบาย:**
+การคำนวณผลลัพธ์โดยแบ่งช่วงเวลา (Windowing) เช่น "ยอดรวมทุกๆ 5 นาที"
+
+**Script:**
+```sql
+-- นับจำนวน Transaction ทุกๆ 1 นาที (Tumbling Window)
+SELECT 
+    user_account_id,
+    COUNT(*) AS txn_count
+FROM stg_txns
+WINDOW TUMBLING (SIZE 1 MINUTE)
+GROUP BY user_account_id
+EMIT CHANGES;
+```
+
+### 6. UDF (User Defined Functions)
+**คำอธิบาย:**
+การเรียกใช้ฟังก์ชันพิเศษที่เราเขียน Java Code ขึ้นมาเอง เพื่อทำ Logic ที่ซับซ้อนซึ่ง SQL ธรรมดาทำไม่ได้
+
+**Script:**
+```sql
+-- ตัวอย่างการใช้ UDF (สมมติชื่อ formula_x)
+SELECT 
+    id, 
+    formula_x(amount) AS calculated_value 
+FROM stg_txns 
+EMIT CHANGES;
+```
+
+### 7. Data STG Reject
+**คำอธิบาย:**
+การกรองข้อมูลที่ผิดปกติหรือไม่ต้องการ แยกออกไปลง Stream/Table อื่น (Filter Logic)
+
+**Script:**
+```sql
+-- แยกข้อมูลที่ Amount น้อยกว่า 0 ไปลง table reject
+CREATE STREAM rejected_txns AS
+SELECT * 
+FROM stg_txns 
+WHERE amount < 0
+EMIT CHANGES;
+```
+
+### 8. SVC (Masking field)
+**คำอธิบาย:**
+การปกปิดข้อมูลสำคัญ (PII) ก่อนนำไปใช้งานต่อ เพื่อความปลอดภัย (Data Privacy)
+
+**Script:**
+```sql
+-- Masking เลขบัตรเครดิต
+SELECT 
+    id, 
+    MASK(credit_card_number) AS masked_card 
+FROM stg_sensitive_data 
+EMIT CHANGES;
+```
+
+### 9. Logging error, Error Handling
+**คำอธิบาย:**
+การตรวจสอบ Error ที่เกิดขึ้นใน System เพื่อใช้ในการ Debug และ Monitor Pipeline
+
+**Script:**
+```sql
+-- ดู Processing Log ของ ksqlDB
+SELECT * FROM ksql_processing_log 
+WHERE type = 'error' 
+EMIT CHANGES;
+```
+
+### 10. Monitoring Grafana, C3
+**คำอธิบาย:**
+การดู Dashboard เพื่อ Monitor Throughput และ Latency ของ Pipeline
+
+**Script:**
+```bash
+# (Command line) ตรวจสอบ Consumer Group Lag
+kafka-consumer-groups --bootstrap-server broker:9092 --describe --all-groups
+```
+
+### 11. Technical Column (Optional)
+**คำอธิบาย:**
+การดึงข้อมูล System Columns มาใช้งาน เช่น เวลาที่ข้อมูลเข้า Kafka (Rowtime)
+
+**Script:**
+```sql
+-- ดึง ROWTIME และ ROWKEY มาแสดง
+SELECT 
+    ROWTIME,
+    ROWKEY,
+    id,
+    amount 
+FROM stg_txns 
+EMIT CHANGES;
+```
 
 ---
 
-<div align="center">
-  ⭐️ ถ้าชอบโปรเจกต์นี้ อย่าลืมกด Star ให้ด้วยนะครับ! ⭐️
-</div>
+## 🔌 Optional - Kafka Connect
+
+### Kafka Connect Integration
+**คำอธิบาย:**
+การใช้งาน Kafka Connect เพื่อดึงข้อมูลจาก Database ภายนอกเข้ามา (Source) หรือส่งข้อมูลออกไป (Sink)
+
+**Script:**
+```sql
+-- สร้าง Connector ผ่าน ksqlDB
+CREATE SOURCE CONNECTOR jdbc_source WITH (
+  'connector.class' = 'io.confluent.connect.jdbc.JdbcSourceConnector',
+  'connection.url'  = 'jdbc:postgresql://db:5432/mydb',
+  'topic.prefix'    = 'postgres-',
+  'table.whitelist' = 'users'
+);
+```

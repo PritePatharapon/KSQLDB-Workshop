@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline 3: Window Aggregation</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #00897b;
+        }
+
+        .desc {
+            text-align: center;
+            color: #555;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Pipeline 3: Window Aggregation</h2>
+        <p class="desc">Flow การทำ Windowing 3 รูปแบบ (Tumbling, Hopping, Session)</p>
+        <div class="mermaid">
+            graph TD
+            %% Styling
+            classDef raw fill:#e0f2f1,stroke:#00695c,stroke-width:2px;
+            classDef agg fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
+
+            subgraph DATA [SOURCE DATA]
+            LoginEvents(BAAC_RAW_LOGIN_EVENTS_ST):::raw
+            end
+
+            subgraph WINDOWS [AGGREGATION WINDOWS]
+            Tumbling(BAAC_AGG_LOGIN_TUMBLING_TB<br />Size: 30s):::agg
+            Hopping(BAAC_AGG_LOGIN_HOPPING_TB<br />Size: 30s, Adv: 10s):::agg
+            Session(BAAC_AGG_LOGIN_SESSION_TB<br />Timeout: 30s):::agg
+            end
+
+            LoginEvents --> Tumbling
+            LoginEvents --> Hopping
+            LoginEvents --> Session
+        </div>
+    </div>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+
+</html>
