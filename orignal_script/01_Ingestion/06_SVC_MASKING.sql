@@ -1,4 +1,4 @@
---------------------------------------------- 07 SVC MASKING ---------------------------------------------
+--------------------------------------------- 06 SVC MASKING ---------------------------------------------
 -- Scenario: สร้าง Service Stream สำหรับให้ Downstream นำไปใช้งาน โดยต้องทำการ Mask Data ที่เป็น PII 
 -- Source: BAAC_POC_MFEC_ENRICHED_TXN_ST (จากไฟล์ 05_STREAM_JOIN_TABLE.sql)
 -- Masking Logic:
@@ -8,7 +8,7 @@
 
 CREATE STREAM BAAC_SVC_MASKED_TXN_ST WITH (
     KAFKA_TOPIC = 'BAAC_SVC_MASKED_TXN_ST',
-    FORMAT = 'AVRO',
+    FORMAT = 'JSON',
     PARTITIONS = 1, REPLICAS = 1
 ) AS
 SELECT
