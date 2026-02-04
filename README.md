@@ -1,3 +1,4 @@
+
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -30,178 +31,125 @@
 
 ### 1. Overview Data Pipeline
 **คำอธิบาย:**
-ภาพรวมของ Flow ข้อมูลใน Workshop นี้ จะเป็นการรับข้อมูล Transaction เข้ามา ทำการแปลงข้อมูล (Transform) ตรวจสอบความถูกต้อง (Validate) และส่งผลลัพธ์ออกไป
+เป็น pipeline แสดงตัวอย่างการใช้ ksqlDB สร้าง Data Pipeline จะมีทั้งหมด 3 Pipeline ดังนี้
 
-**Script:**
-```sql
--- ดู Topic ทั้งหมดที่มีในระบบ เพื่อสำรวจ Source Data
-SHOW TOPICS;
-```
+1. Ingestion
+    * เป็นเส้นเกี่ยวกับการทำ filter ข้อมูล และแสดงตัวอย่างการ join ข้อมูล ในรูปแบบต่างๆ ร่วมถึงการทำ masking ข้อมูล
+2. Transformation
+    * เป็นเส้นเกี่ยวกับการทำ delimited, cast, กำหนด field ให้ ข้อมูล
+3. Analytics
+    * เป็นเส้นเกี่ยวกับการทำ window aggregate
 
-### 2. Create Source Stream and Table
-**คำอธิบาย:**
-การสร้าง Stream และ Table เพื่อ map เข้ากับ Kafka Topic ที่มีอยู่แล้ว เพื่อให้ ksqlDB สามารถอ่านข้อมูลได้
+---
 
-**Script:**
-```sql
--- สร้าง Source Stream จาก Topic 'raw_transactions'
-CREATE STREAM raw_txns (
-    txn_id VARCHAR,
-    amount DOUBLE,
-    user_id VARCHAR
-) WITH (
-    KAFKA_TOPIC = 'raw_transactions',
-    VALUE_FORMAT = 'JSON'
-);
-```
+### 2. Preparation (IMPORTANT!)
+ก่อนเริ่มรัน Workshop จะต้องทำการเตรียมไฟล์ Script ให้พร้อมใช้งานสำหรับ User ของคุณ โดยการรัน Script เพื่อเปลี่ยนชื่อ Resource (Stream/Table/Topic) ทั้งหมดให้มี Suffix เป็นชื่อของคุณ (ป้องกันการชนกันกับคนอื่น)
 
-### 3. Data STG (Cast, Delimited, Field name)
-**คำอธิบาย:**
-ขั้นตอน Staging Data เพื่อทำความสะอาดและจัดรูปแบบข้อมูล:
-*   **Cast**: เปลี่ยน type เช่น String เป็น Int
-*   **Delimited**: แยกข้อมูลที่ติดกัน
-*   **Field name**: เปลี่ยนชื่อ Column ให้สื่อความหมาย
-
-**Script:**
-```sql
--- สร้าง Stream ใหม่ที่ Clean ข้อมูลแล้ว
-CREATE STREAM stg_txns AS
-SELECT 
-    CAST(txn_id AS INT) AS id,
-    amount,
-    UCASE(user_id) AS user_account_id
-FROM raw_txns
-EMIT CHANGES;
-```
-
-### 4. Data STG ksqlDB Join
-**คำอธิบาย:**
-การรวมข้อมูล (Join) ระหว่าง Data Sources เพื่อเติมเต็มข้อมูลให้สมบูรณ์ (Enrichment) โดยมี 3 รูปแบบหลัก: Stream-Stream, Stream-Table, Table-Table
-
-**Script:**
-```sql
--- ตัวอย่าง Stream-Table Join (Enrich Transaction ด้วย User Profile)
-CREATE STREAM enriched_txns AS
-SELECT 
-    t.id AS txn_id,
-    t.amount,
-    u.name AS user_name
-FROM stg_txns t
-LEFT JOIN user_profiles u ON t.user_account_id = u.user_id
-EMIT CHANGES;
-```
-
-### 5. Data STG Window Aggregate
-**คำอธิบาย:**
-การคำนวณผลลัพธ์โดยแบ่งช่วงเวลา (Windowing) เช่น "ยอดรวมทุกๆ 5 นาที"
-
-**Script:**
-```sql
--- นับจำนวน Transaction ทุกๆ 1 นาที (Tumbling Window)
-SELECT 
-    user_account_id,
-    COUNT(*) AS txn_count
-FROM stg_txns
-WINDOW TUMBLING (SIZE 1 MINUTE)
-GROUP BY user_account_id
-EMIT CHANGES;
-```
-
-### 6. UDF (User Defined Functions)
-**คำอธิบาย:**
-การเรียกใช้ฟังก์ชันพิเศษที่เราเขียน Java Code ขึ้นมาเอง เพื่อทำ Logic ที่ซับซ้อนซึ่ง SQL ธรรมดาทำไม่ได้
-
-**Script:**
-```sql
--- ตัวอย่างการใช้ UDF (สมมติชื่อ formula_x)
-SELECT 
-    id, 
-    formula_x(amount) AS calculated_value 
-FROM stg_txns 
-EMIT CHANGES;
-```
-
-### 7. Data STG Reject
-**คำอธิบาย:**
-การกรองข้อมูลที่ผิดปกติหรือไม่ต้องการ แยกออกไปลง Stream/Table อื่น (Filter Logic)
-
-**Script:**
-```sql
--- แยกข้อมูลที่ Amount น้อยกว่า 0 ไปลง table reject
-CREATE STREAM rejected_txns AS
-SELECT * 
-FROM stg_txns 
-WHERE amount < 0
-EMIT CHANGES;
-```
-
-### 8. SVC (Masking field)
-**คำอธิบาย:**
-การปกปิดข้อมูลสำคัญ (PII) ก่อนนำไปใช้งานต่อ เพื่อความปลอดภัย (Data Privacy)
-
-**Script:**
-```sql
--- Masking เลขบัตรเครดิต
-SELECT 
-    id, 
-    MASK(credit_card_number) AS masked_card 
-FROM stg_sensitive_data 
-EMIT CHANGES;
-```
-
-### 9. Logging error, Error Handling
-**คำอธิบาย:**
-การตรวจสอบ Error ที่เกิดขึ้นใน System เพื่อใช้ในการ Debug และ Monitor Pipeline
-
-**Script:**
-```sql
--- ดู Processing Log ของ ksqlDB
-SELECT * FROM ksql_processing_log 
-WHERE type = 'error' 
-EMIT CHANGES;
-```
-
-### 10. Monitoring Grafana, C3
-**คำอธิบาย:**
-การดู Dashboard เพื่อ Monitor Throughput และ Latency ของ Pipeline
-
-**Script:**
+**คำสั่ง:**
 ```bash
-# (Command line) ตรวจสอบ Consumer Group Lag
-kafka-consumer-groups --bootstrap-server broker:9092 --describe --all-groups
+# พิมพ์คำสั่งนี้ใน Terminal (เปลี่ยน <your_name> เป็นชื่อของคุณ หรือ Suffix ที่ต้องการ)
+# ตัวอย่าง: ./prepare_workshop.sh user01
+./prepare_workshop.sh <your_name>
 ```
 
-### 11. Technical Column (Optional)
-**คำอธิบาย:**
-การดึงข้อมูล System Columns มาใช้งาน เช่น เวลาที่ข้อมูลเข้า Kafka (Rowtime)
+**ผลลัพธ์:**
+1. Folder `workshop_script/` จะถูกสร้างขึ้นใหม่
+2. ไฟล์ SQL ทั้งหมดจะถูก Copy และเปลี่ยนชื่อ Resource ให้ต่อท้ายด้วย `_<your_name>`
+    * ตัวอย่าง: `BAAC_POC_MFEC_ACCOUNT_ST` -> `BAAC_POC_MFEC_ACCOUNT_ST_user01`
+3. ไฟล์ Mock Data ใน `workshop_script/mock_data/` ก็จะถูกเปลี่ยนชื่อให้ตรงกันพร้อมใช้งาน
 
-**Script:**
+> **Note:** ในคู่มือนี้จะใช้ Suffix เป็น **`_user01`** ในตัวอย่าง
+
+---
+
+### 3. Workshop Execution Steps
+ทำตามขั้นตอนทีละ Pipeline โดย **Copy Code จากไฟล์ใน workshop_script** ไปรัน
+
+#### 🔍 3.1 Pipeline 1: Ingestion
+> **Goal:** นำเข้าข้อมูล Raw Data, กรองข้อมูล (Stage/Reject), ทำการ Join ข้อมูล (Stream-Stream, Stream-Table, Table-Table) และ Masking Field Sensitive
+
+**Step 1: Create Streams & Tables**
+รันคำสั่งสร้าง Resource ให้ครบตามลำดับไฟล์:
+1. `01_Ingestion/01_RAW.sql` (สร้าง Table หลัก Account, Transaction)
+2. `01_Ingestion/02_STG_AND_REJ.sql` (แยก Transaction ดี/เสีย)
+3. `01_Ingestion/03_STREAM_JOIN_STREAM.sql` (Stream Join Stream)
+4. `01_Ingestion/04_TABLE_JOIN_TABLE.sql` (Table Join Table)
+5. `01_Ingestion/05_STREAM_JOIN_TABLE.sql` (Transaction Enriched with Account)
+6. `01_Ingestion/06_SVC_MASKING.sql` (Final Output with Masking)
+
+**Step 2: Monitor Output (Select)**
+เปิดหน้า Terminal/KSQLDB ใหม่ แล้วรันคำสั่งนี้ค้างไว้เพื่อดูผลลัพธ์ปลายทาง:
 ```sql
--- ดึง ROWTIME และ ROWKEY มาแสดง
-SELECT 
-    ROWTIME,
-    ROWKEY,
-    id,
-    amount 
-FROM stg_txns 
-EMIT CHANGES;
+-- ดูข้อมูลปลายทางที่ Masking เรียบร้อยแล้ว (อย่าลืมเปลี่ยน Suffix)
+SET 'auto.offset.reset' = 'earliest';
+SELECT * FROM BAAC_SVC_MASKED_TXN_ST_user01 EMIT CHANGES;
+```
+
+**Step 3: Insert Mock Data**
+เปิด Terminal ใหม่ (หรือใช้ Tool) รันคำสั่ง Insert ข้อมูลจำลอง:
+*ใช้ไฟล์:* `workshop_script/mock_data/01_main_flow_mock.sql`
+
+```sql
+-- ตัวอย่าง Insert Account
+INSERT INTO BAAC_POC_MFEC_ACCOUNT_ST_user01 (...) VALUES (...);
+
+-- ตัวอย่าง Insert Transaction (จะเห็นข้อมูลไหลเข้าจอ Monitor ทันที)
+INSERT INTO BAAC_POC_MFEC_TRANSACTION_ST_user01 (...) VALUES (...);
 ```
 
 ---
 
-## 🔌 Optional - Kafka Connect
+#### 🛠 3.2 Pipeline 2: Transformation
+> **Goal:** แปลงข้อมูลจาก String ยาวๆ (Pipe Delimited) ให้เป็น Structured Data
 
-### Kafka Connect Integration
-**คำอธิบาย:**
-การใช้งาน Kafka Connect เพื่อดึงข้อมูลจาก Database ภายนอกเข้ามา (Source) หรือส่งข้อมูลออกไป (Sink)
+**Step 1: Create Stream**
+รันคำสั่งจากไฟล์:
+1. `02_Transformation/03_STG_TRANSFROM.sql`
 
-**Script:**
+**Step 2: Monitor Output (Select)**
 ```sql
--- สร้าง Connector ผ่าน ksqlDB
-CREATE SOURCE CONNECTOR jdbc_source WITH (
-  'connector.class' = 'io.confluent.connect.jdbc.JdbcSourceConnector',
-  'connection.url'  = 'jdbc:postgresql://db:5432/mydb',
-  'topic.prefix'    = 'postgres-',
-  'table.whitelist' = 'users'
-);
+SELECT * FROM BAAC_POC_MFEC_TRANSFORMED_ST_user01 EMIT CHANGES;
+```
+
+**Step 3: Insert Mock Data**
+*ใช้ไฟล์:* `workshop_script/mock_data/02_transform_mock.sql`
+```sql
+-- ยิงข้อมูล string ยาวๆ เข้าไป เช่น "TXN001|DEBIT|500"
+INSERT INTO BAAC_RAW_STRING_INPUT_ST_user01 ...
+```
+
+---
+
+#### 📊 3.3 Pipeline 3: Analytics (Window Aggregation)
+> **Goal:** คำนวณยอดทางสถิติในช่วงเวลาต่างๆ (Tumbling, Hopping, Session)
+
+**Step 1: Create Window Tables**
+รันคำสั่งจากไฟล์:
+1. `03_Analytics/06_WINDOW_AGGREGATION.sql`
+
+**Step 2: Monitor Output (Select)**
+เลือกดูผลลัพธ์ตามประเภท Window ที่สนใจ:
+
+*แบบ Session Window (พฤติกรรม User)*
+```sql
+SELECT * FROM BAAC_AGG_LOGIN_SESSION_TB_user01 EMIT CHANGES;
+```
+
+**Step 3: Insert Mock Data**
+*ใช้ไฟล์:* `workshop_script/mock_data/03_window_mock.sql`
+
+> **Note:** สำหรับ Session Window ต้องลองยิงข้อมูลเว้นช่วงเกิน 30 วินาที เพื่อให้ Window ตัดรอบ
+```sql
+-- ยิง Login Event ของ User B (Start Session)
+INSERT INTO BAAC_RAW_LOGIN_EVENTS_ST_user01 ...
+-- (รอ 30+ วินาที)
+-- ยิง Login Event ใหม่ (Start New Session)
+```
+
+---
+
+## 🧹 Cleanup
+เมื่อจบ Workshop ให้รันไฟล์ `00_cleanup.sql` ในแต่ละ Folder เพื่อลบ Resource หรือใช้ Script ลบ Topic:
+```bash
+./delete_topics_by_suffix.sh user01
 ```
