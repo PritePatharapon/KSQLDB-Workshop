@@ -148,8 +148,18 @@ INSERT INTO BAAC_RAW_LOGIN_EVENTS_ST_user01 ...
 
 ---
 
-## 🧹 Cleanup
-เมื่อจบ Workshop ให้รันไฟล์ `00_cleanup.sql` ในแต่ละ Folder เพื่อลบ Resource หรือใช้ Script ลบ Topic:
+## 🧹 Cleanup Steps
+เมื่อจบ Workshop ให้ทำการลบ Reosurce ตามลำดับดังนี้:
+
+**1. Drop KSQLDB Streams/Tables**
+รันคำสั่ง SQL จากไฟล์ Cleanup ใน KSQLDB Editor (เพื่อลบ Table/Stream ใน Memory ของ KSQLDB)
+*   `01_Ingestion/00_cleanup.sql`
+*   `02_Transformation/00_cleanup.sql`
+*   `03_Analytics/00_cleanup.sql`
+
+**2. Delete Underlying Kafka Topics (Optional)**
+หากต้องการลบข้อมูล Kafka Topic จริงๆ (Clean Storage) ให้รัน Shell Script นี้:
 ```bash
+# เปลี่ยน user01 เป็นชื่อของคุณ
 ./delete_topics_by_suffix.sh user01
 ```
