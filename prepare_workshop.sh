@@ -11,10 +11,28 @@ SUFFIX=$1
 WORKSHOP_DIR="workshop_script"
 ORIGINAL_DIR="orignal_script"
 
-# 1. Create new folder, clear if exists
+# 1. Force Clean Directory
 if [ -d "$WORKSHOP_DIR" ]; then
     echo "Cleaning existing $WORKSHOP_DIR..."
-    rm -rf "$WORKSHOP_DIR"
+    
+    # Try rename first to break locks/handles if possible
+    TEMP_DIR="${WORKSHOP_DIR}_TO_DELETE_$(date +%s)"
+    mv "$WORKSHOP_DIR" "$TEMP_DIR" 2>/dev/null
+
+    if [ -d "$TEMP_DIR" ]; then
+         # If rename success, delete the temp dir
+         rm -rf "$TEMP_DIR"
+    else
+         # If rename fail, try direct delete
+         rm -rf "$WORKSHOP_DIR"
+    fi
+
+    # Check again
+    if [ -d "$WORKSHOP_DIR" ]; then
+        echo "Error: Could not remove '$WORKSHOP_DIR'. It might be locked by another process."
+        echo "Please CLOSE ALL files/terminals using this folder and run again."
+        exit 1
+    fi
 fi
 
 # 2. Copy original folder
@@ -23,6 +41,8 @@ if [ ! -d "$ORIGINAL_DIR" ]; then
     echo "Error: Directory $ORIGINAL_DIR does not exist."
     exit 1
 fi
+
+# Use cp -r to create the directory as a copy
 cp -r "$ORIGINAL_DIR" "$WORKSHOP_DIR"
 
 # 3. Find and replace Table/Stream/Topic names

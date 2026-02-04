@@ -12,14 +12,17 @@ CREATE STREAM BAAC_SVC_MASKED_TXN_ST WITH (
     PARTITIONS = 1, REPLICAS = 1
 ) AS
 SELECT
+    JOIN_KEY, 
     TXN_ID,
     TXN_CODE,
     
-    -- Mask Account ID: แสดงเฉพาะ 4 ตัวหน้า (ACC0XXXX)
-    MASK_KEEP_LEFT(ACCOUNT_ID, 4, 'x') AS MASKED_ACCOUNT_ID,
+    -- Mask Account ID: แสดงเฉพาะ 4 ตัวหน้า (ACC0XXXX) 
+    -- ใช้ Pattern: Upper->X, Lower->x, Digit->n, Other->-
+    MASK_KEEP_LEFT(ACCOUNT_ID, 4, 'X', 'x', 'n', '-') AS MASKED_ACCOUNT_ID,
     
-    -- Mask Account Name: แสดงเฉพาะ 3 ตัวแรก (Som***)
-    MASK_KEEP_LEFT(ACCOUNT_NAME, 3, '*') AS MASKED_ACC_NAME,
+    -- Mask Account Name: แสดงเฉพาะ 3 ตัวแรก (Som***) 
+    -- ใช้ Pattern: * สำหรับทุกตัวอักษร
+    MASK_KEEP_LEFT(ACCOUNT_NAME, 3, '*', '*', '*', '*') AS MASKED_ACC_NAME,
     
     ACCOUNT_TYPE,
     TXN_AMT,
