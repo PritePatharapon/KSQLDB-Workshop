@@ -44,13 +44,18 @@ You can use ksqlDB to build a materialized view of state on a specific server by
 ## ksqlDB Data pipeline
 ### Overview Data pipeline
 
-Pipeline 1: Transformation, filtering
+Diagram
 
-Pipeline 2: Enrichment
+**Pipeline 1**: Transformation & Filtering  
+Transform raw data into structured format and filter invalid records.
 
-Pipeline 3: Aggregation and window time
+**Pipeline 2**: Enrichment (Stream–Stream, Stream–Table, Table–Table Join)  
+Join transaction data with account data to add business context.
 
+**Pipeline 3**: Aggregation & Window Time (Tumbling, Hopping, Session Window)  
+Aggregate data within time windows for real-time analytics.
 
+---
 
 ### Pipeline 1: Transformation, filtering, Aggregate
 #### Step 1 Create source stream
@@ -409,6 +414,22 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
 ---
 
 ### Pipeline 3: Aggregation and Window time
+
+#### Basic window type on ksqlDB
+<p align="center">
+  <img src="Image/ksql-window-aggregation.png" width="600"/>
+</p>
+
+<div align="center">
+  
+| Window Type     | Behavior       | Description                                      |
+|-----------------|----------------|--------------------------------------------------|
+| Tumbling Window | Time-based     | Fixed-duration, non-overlapping, gap-less windows |
+| Hopping Window  | Time-based     | Fixed-duration, overlapping windows              |
+| Session Window  | Session-based  | Dynamically-sized, non-overlapping, data-driven windows |
+
+</div>
+
 #### Step 1 Create source stream
 ```SQL
 CREATE STREAM MB_LOGIN_EVENTS_RAW_ST_<USER> (
