@@ -48,7 +48,8 @@ Pipeline 1: Transformation, filtering
 
 Pipeline 2: Enrichment
 
-Pipeline 3 Aggregate and windowing
+Pipeline 3: Aggregation and window time
+
 
 
 ### Pipeline 1: Transformation, filtering, Aggregate
@@ -94,7 +95,7 @@ SELECT
     SPLIT(raw_message, '|')[5] AS ACC_NO,
     SPLIT(raw_message, '|')[6] AS TXN_DT,
     SPLIT(raw_message, '|')[7] AS CHANNEL,
-    SPLIT(raw_message, '|')[7] AS UPDATE_TS
+    SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
 FROM CDC_MF_TXN_RAW_ST_<USER>
 WHERE TXN_ID NOT IN ('000000','999999') OR CHANNEL != 'Mobile';
@@ -128,7 +129,8 @@ SELECT
     -- Account & metadata
     SPLIT(raw_message, '|')[5] AS ACC_NO,
     SPLIT(raw_message, '|')[6] AS TXN_DT,
-    SPLIT(raw_message, '|')[7] AS CHANNEL
+    SPLIT(raw_message, '|')[7] AS CHANNEL,
+    SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
 FROM CDC_MF_TXN_RAW_ST_<USER>
 WHERE CHANNEL = 'Mobile';
@@ -163,7 +165,6 @@ Select * From CDC_MF_TXN_STG_REJ_ST_<USER>
 
 #### Output:
 ---
-
 
 ### Pipeline 2.1: Enrichment Stream with Stream 
 #### Step 1 Create source Stream
@@ -331,6 +332,200 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 #### Output:
 
 ---
+
+### Pipeline 2.3: Enrichment Table with Table 
+#### Step 1 Create source Table
+
+``` SQL
+CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> WITH (
+    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN_<USER>',   -- Source Kafka topic
+    VALUE_FORMAT = 'JSON',               -- JSON message format
+    PARTITIONS = 3,                      -- Number of partitions for scalability
+    REPLICAS = 3                         -- Replication factor for fault tolerance
+) AS
+SELECT
+    ACC_NO AS ACC_NO,
+    LATEST_BY_OFFSET(TXN_ID) AS TXN_ID,
+    LATEST_BY_OFFSET(TXN_TYPE) AS TXN_TYPE,
+    LATEST_BY_OFFSET(TXN_AMT) AS TXN_AMT,
+    LATEST_BY_OFFSET(TXN_DT) AS TXN_DT
+FROM CDC_MF_TXN_STG_ST_<USER>
+GROUP BY ACC_NO;
+```
+
+
+#### Step 2 Enrichment Account Table with Transaction Table
+```SQL
+CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER> WITH (
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_<USER>',      -- Source Kafka topic
+  FORMAT = 'JSON',               -- JSON message format
+  PARTITIONS = 3,                -- Number of partitions for scalability
+  REPLICAS = 3                   -- Replication factor for fault tolerance
+) AS
+SELECT
+    A.ACCOUNT_ID,
+    A.ACCOUNT_NAME,
+    A.ACCOUNT_TYPE,
+    T.LATEST_TXN_ID,
+    T.LATEST_TXN_AMT,
+    T.LAST_TXN_TIME
+FROM CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> T
+LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB_<USER> A 
+ON T.ACC_NO = A.ACCOUNT_ID;
+```
+#### Step 3 Insert and Select Data
+
+```sql
+-- Insert Data 
+INSERT INTO
+INSERT INTO
+INSERT INTO
+```
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+
+-- Select Accept Data 
+SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
+```
+#### Output:
+---
+#### Step 4 Insert and Select Data
+
+```sql
+-- Insert Data 
+INSERT INTO
+INSERT INTO
+INSERT INTO
+```
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+
+-- Select Accept Data 
+SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
+```
+#### Output:
+---
+
+### Pipeline 3: Aggregation and Window time
+#### Step 1 Create source stream
+```SQL
+CREATE STREAM MB_LOGIN_EVENTS_RAW_ST_<USER> (
+    USER_ID VARCHAR KEY,
+    DEVICE_TYPE VARCHAR, -- iOS, Android, Web
+    LOGIN_STATUS VARCHAR -- SUCCESS, FAIL
+) WITH (
+  KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST_<USER>',      -- Source Kafka topic
+  FORMAT = 'JSON',               -- JSON message format
+  PARTITIONS = 3,                -- Number of partitions for scalability
+  REPLICAS = 3                   -- Replication factor for fault tolerance
+);
+```
+
+#### Step 2 Create Aggregation data with Tumbling window
+```SQL
+CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST_<USER> WITH (
+    KAFKA_TOPIC = 'BAAC_AGG_LOGIN_TUMBLING_<USER>',      -- Source Kafka topic
+    FORMAT = 'JSON',               -- JSON message format
+    PARTITIONS = 3,                -- Number of partitions for scalability
+    REPLICAS = 3                   -- Replication factor for fault tolerance
+) AS
+SELECT
+    USER_ID,
+    COUNT(*) AS LOGIN_COUNT,
+    TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
+    TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
+FROM MB_LOGIN_EVENTS_RAW_ST_<USER>
+WINDOW TUMBLING (SIZE 30 SECONDS)
+GROUP BY USER_ID;
+```
+#### Step 3 Insert and Select Data
+
+```sql
+-- Insert Data 
+INSERT INTO
+INSERT INTO
+INSERT INTO
+```
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+
+-- Select Accept Data 
+SELECT * FROM BAAC_AGG_LOGIN_TUMBLING_TB_<USER>
+```
+
+#### Step 4 Create Aggregation data with Hopping window
+```SQL
+CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING_<USER>',      -- Source Kafka topic
+    FORMAT = 'JSON',               -- JSON message format
+    PARTITIONS = 3,                -- Number of partitions for scalability
+    REPLICAS = 3                   -- Replication factor for fault tolerance
+) AS
+SELECT
+    USER_ID,
+    COUNT(*) AS LOGIN_COUNT,
+    TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
+    TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
+FROM MB_LOGIN_EVENTS_RAW_ST_<USER>
+WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
+GROUP BY USER_ID;
+```
+
+#### Step 5 Insert and Select Data
+
+```sql
+-- Insert Data 
+INSERT INTO
+INSERT INTO
+INSERT INTO
+```
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+
+-- Select Accept Data 
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER>
+```
+
+#### Step 6 Create Aggregation data with Session window
+```SQL
+CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB_<USER> WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION_<USER>',    -- Source Kafka topic
+    FORMAT = 'JSON',               -- JSON message format
+    PARTITIONS = 3,                -- Number of partitions for scalability
+    REPLICAS = 3                   -- Replication factor for fault tolerance
+) AS
+SELECT
+    USER_ID,
+    COUNT(*) AS LOGIN_COUNT,
+    TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
+    TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
+FROM BAAC_RAW_LOGIN_EVENTS_ST
+WINDOW SESSION (30 SECONDS)
+GROUP BY USER_ID;
+```
+
+#### Step 7 Insert and Select Data
+
+```sql
+-- Insert Data 
+INSERT INTO
+INSERT INTO
+INSERT INTO
+```
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+
+-- Select Accept Data 
+SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB_<USER>
+```
+
+
+
 
 ## Operation
 ### Logging
