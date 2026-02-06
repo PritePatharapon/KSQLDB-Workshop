@@ -8,6 +8,18 @@ ksqlDB is a database for building stream processing applications on top of Apach
 
 ---
 
+## How ksqlDB work with Kafka
+ksqlDB separates its distributed compute layer from its distributed storage layer, for which it uses Apache Kafka.
+<p align="center">
+  <img src="Image/ksqldb-kafka.png" width="400"/>
+  <img src="Image/ksql.svg" width="400"/>
+</p>
+
+
+ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+
+---
+
 ## Way to Interact with ksqlDB
 
 ksqlDB provides three main ways to interact with the system and execute SQL commands.
@@ -27,17 +39,7 @@ ksqlDB allows us to read, filter, transform, or otherwise process streams and ta
 
 ---
 
-## Way to interact with ksqlDB
-ksqlDB separates its distributed compute layer from its distributed storage layer, for which it uses Apache Kafka.
-<p align="center">
-  <img src="Image/ksqldb-kafka.png" width="400"/>
-  <img src="Image/ksql.svg" width="400"/>
-</p>
 
-
-ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
-
----
 
 ## Basic standing concept on ksqlDB
 ### Stream and Table
