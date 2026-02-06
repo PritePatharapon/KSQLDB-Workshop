@@ -22,13 +22,24 @@ ksqlDB allows us to read, filter, transform, or otherwise process streams and ta
 
 ## Way to Interact with ksqlDB
 
-ksqlDB provides three main ways to interact with the system and execute SQL commands.
+ksqlDB provides three main ways to interact with the system and execute SQL commands via ksqlDB-CLI, REST API, Confluent Control Center.
+<p align="center">
+  <img src="Image/way.png" width="800"/>
+</p>
 
 1. ksqlDB CLI  
    Use the command-line interface to run SQL commands directly and interactively.
+   
+<p align="center">
+  <img src="Image/ksql-cli1.png" width="800"/>
+</p>
 
 2. REST API  
    Send SQL statements and manage queries programmatically through HTTP endpoints.
+
+<p align="center">
+  <img src="Image/rest21.png" width="800"/>
+</p>
 
 3. Confluent Control Center  
    Execute SQL commands and monitor queries through the web-based user interface.
