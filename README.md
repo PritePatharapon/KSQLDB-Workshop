@@ -8,7 +8,26 @@ ksqlDB is a database for building stream processing applications on top of Apach
 
 ---
 
-## How ksqlDB work with Kafka
+## Way to Interact with ksqlDB
+
+ksqlDB provides three main ways to interact with the system and execute SQL commands.
+
+1. ksqlDB CLI  
+   Use the command-line interface to run SQL commands directly and interactively.
+
+2. REST API  
+   Send SQL statements and manage queries programmatically through HTTP endpoints.
+
+3. Confluent Control Center  
+   Execute SQL commands and monitor queries through the web-based user interface.
+
+
+
+ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+
+---
+
+## Way to interact with ksqlDB
 ksqlDB separates its distributed compute layer from its distributed storage layer, for which it uses Apache Kafka.
 <p align="center">
   <img src="Image/ksqldb-kafka.png" width="400"/>
@@ -548,9 +567,23 @@ SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB_<USER>
 
 
 
-## Operation
+## Operations & Monitoring
 ### Logging
+
+Logging can be configured using Log4j to store logs in local files for easier monitoring and troubleshooting.  
+It allows users to control log levels and formats, save logs for analysis, investigate query failures and system issues, and manage disk usage through log rotation.
+
+
 ### Error handling
+Monitor record-level failures through the `ksqldb-processing-log` Kafka topic, as ksqlDB provides built-in error handling and does not require any additional error-handling code. All processing errors can be reviewed through this topic or via local ksqlDB log files.
+
 ### Monitoring
-#### Grafana
 #### Confluent Control Center
+
+Confluent Control Center can be used to check the basic status of Kafka and ksqlDB components.  
+It also allows users to monitor active queries, inspect topics, and execute SQL commands directly through the Control Center interface.
+
+#### 3rd-Party Visualization Tools
+
+ksqlDB metrics can be exported using third-party tools to scrape and collect data from ksqlDB servers.  
+These metrics can be visualized in external monitoring dashboards to monitor system health, query performance, and processing status in real time.
