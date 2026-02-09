@@ -1,19 +1,24 @@
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+-- Monitor Tumbling Window (Fixed 30s non-overlapping)
+SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST_<USER> EMIT CHANGES;
 
-SET 'auto.offset.reset' = 'earliest';
+-- Monitor Hopping Window (30s window, hop every 10s)
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> EMIT CHANGES;
 
--- Select Accept Data 
-SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST_<USER>
+-- Monitor Session Window (Group events with gap < 30s)
+SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB_<USER> EMIT CHANGES;
 
-SET 'auto.offset.reset' = 'earliest';
+-- Batch 1: Start 3 events quickly
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST_<USER> (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER01', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST_<USER> (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER01', 'iOS', 'FAIL');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST_<USER> (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER02', 'Android', 'SUCCESS');
 
--- Select Reject Data
-Select * From MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER>
+-- Wait 15 seconds (Simulated)
+-- INSERT INTO MB_LOGIN_EVENTS_RAW_ST_<USER> ... 
 
-SET 'auto.offset.reset' = 'earliest';
+-- Batch 2: Trigger Update (These will fall into same Tumbling window if within 30s of start)
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST_<USER> (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER01', 'iOS', 'SUCCESS');
 
--- Select Reject Data
-Select * From MB_LOGIN_EVENTS_STG_SESSION_TB_<USER>
+-- Expected: 
+-- Tumbling: USER01 Count = 3
+-- Hopping: updates every 10s
+-- Session: USER01 session continues (count 3) because gap < 30s
