@@ -1,5 +1,14 @@
 # ksqlDB Workshop — Getting Started with Streaming SQL
 ## Agendar
+- Overview
+- How ksqlDB work with Kafka
+- Way to interact with ksqlDB
+- Basic standing concept on ksqlDB
+- ksqlDB Data pipeline
+- Operations & Monitoring
+- Recap BAAC solution
+
+
 ## Overview
 ksqlDB is a database for building stream processing applications on top of Apache Kafka. It is **distributed**, **scalable**, **reliable**, and **real-time**. ksqlDB combines the power of real-time stream processing with the approachable feel of a relational database through a familiar, lightweight SQL syntax.
 <p align="center">
@@ -20,7 +29,7 @@ ksqlDB allows us to read, filter, transform, or otherwise process streams and ta
 
 ---
 
-## Way to Interact with ksqlDB
+## Way to interact with ksqlDB
 
 ksqlDB provides three main ways to interact with the system and execute SQL commands via ksqlDB-CLI, REST API, Confluent Control Center.
 <p align="center">
