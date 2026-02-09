@@ -24,8 +24,8 @@ ksqlDB separates its distributed compute layer from its distributed storage laye
   <img src="Image/ksql.svg" width="400"/>
 </p>
 
-
-ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+<p align="center"> <small><em> ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+ </em></small> </p>
 
 ---
 
@@ -47,7 +47,7 @@ ksqlDB provides three main ways to interact with the system and execute SQL comm
    Send SQL statements and manage queries programmatically through HTTP endpoints.
 
 <p align="center">
-  <img src="Image/rest21.png" width="800"/>
+  <img src="Image/REST21.png" width="800"/>
 </p>
 
 3. Confluent Control Center  
@@ -460,7 +460,12 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
 <p align="center">
   <img src="Image/ksql-window-aggregation.png" width="600"/>
 </p>
-
+<p align="center">
+  <small><em>
+    Visualization of Tumbling, Hopping, and Session windows showing how events are grouped over time in ksqlDB.
+  </em></small>
+</p>
+<br>
 <div align="center">
   
 | Window Type     | Behavior       | Description                                      |
@@ -605,7 +610,68 @@ Monitor record-level failures through the `ksqldb-processing-log` Kafka topic, a
 Confluent Control Center can be used to check the basic status of Kafka and ksqlDB components.  
 It also allows users to monitor active queries, inspect topics, and execute SQL commands directly through the Control Center interface.
 
+<p align="center">
+  <img src="Image/C3.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    ksqlDB Editor for executing SQL statements and viewing query results.
+  </em></small>
+</p>
+<br>
+
+<p align="center">
+  <img src="Image/C32.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    Flow view showing data lineage between streams and tables.
+  </em></small>
+</p>
+<br>
+
+<p align="center">
+  <img src="Image/C33.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    Persistent query status and execution details in Confluent Control Center.
+  </em></small>
+</p>
+<br>
+
 #### 3rd-Party Visualization Tools
 
 ksqlDB metrics can be exported using third-party tools to scrape and collect data from ksqlDB servers.  
 These metrics can be visualized in external monitoring dashboards to monitor system health, query performance, and processing status in real time.
+
+
+<p align="center">
+  <img src="Image/Grafana.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    Overview dashboard showing overall ksqlDB query status, throughput, and cluster health.
+  </em></small>
+</p>
+<br>
+
+<p align="center">
+  <img src="Image/Grafana2.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    System and query status dashboard displaying CPU usage, JVM memory, GC activity, and running queries.
+  </em></small>
+</p>
+<br>
+
+<p align="center">
+  <img src="Image/Grafana3.png" width="800"/>
+</p>
+<p align="center">
+  <small><em>
+    Query performance dashboard showing poll, process, commit, and punctuate latency metrics.
+  </em></small>
+</p>
+<br
