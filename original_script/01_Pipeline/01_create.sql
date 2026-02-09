@@ -36,7 +36,7 @@ SELECT
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
 FROM CDC_MF_TXN_RAW_ST_<USER>
-WHERE TXN_ID NOT IN ('000000','999999') OR CHANNEL != 'Mobile';
+WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message, '|')[7] != 'Mobile';
 
 --- Step 3 Filtering Reject Condition
 CREATE STREAM CDC_MF_TXN_STG_REJ_ST_<USER>
@@ -67,4 +67,4 @@ SELECT
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
 FROM CDC_MF_TXN_RAW_ST_<USER>
-WHERE CHANNEL = 'Mobile';
+WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
