@@ -110,7 +110,7 @@ CREATE STREAM CDC_MF_TXN_RAW_ST (
 );
 ```
 
-##### Output:
+#### Output:
 
 <p align="center">
   <img src="Image/Pipeline1-1.png" width="1000"/>
@@ -150,7 +150,7 @@ FROM CDC_MF_TXN_RAW_ST
 WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message, '|')[7] != 'Mobile';
 ```
 
-##### Output:
+#### Output:
 
 <p align="center">
   <img src="Image/Pipeline1-2.png" width="1000"/>
@@ -190,7 +190,7 @@ FROM CDC_MF_TXN_RAW_ST
 WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 ```
 
-##### Output:
+#### Output:
 <p align="center">
   <img src="Image/Pipeline1-3.png" width="1000"/>
 </p>
@@ -214,7 +214,12 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
 
-##### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
+#### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
+
+- **TXN1001** is routed to `CDC_MF_TXN_STG_ST_WORKSHOP` because it uses a valid transaction ID and comes from a non-Mobile channel.
+- **000000** is routed to `CDC_MF_TXN_STG_REJ_ST_WORKSHOP` because it uses a restricted ID and comes from the Mobile channel, which matches the rejection rules.
+
+
 <p align="center">
   <img src="Image/Pipeline1-7.png" width="1000"/>
   <img src="Image/Pipeline1-9.png" width="1000"/>
