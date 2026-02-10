@@ -197,8 +197,8 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 
 ##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
 <p align="center">
-  <img src="Image/Pipeline1-4.png" width="1000"/>
-  <img src="Image/Pipeline1-5.png" width="1000"/>
+  <img src="Image/Pipeline1-4.png" width="800"/>
+  <img src="Image/Pipeline1-5.png" width="800"/>
 </p>
 
 
@@ -267,6 +267,10 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
 ```
 
 #### Output:
+
+<p align="center">
+  <img src="Image/Pipeline2-1-1.png" width="800"/>
+</p>
 ---
 
 #### Step 2 Enrich Stream and Stream
@@ -298,7 +302,20 @@ ON A.ACCOUNT_ID = T.ACC_NO;
 ```
 
 #### Output:
+<p align="center">
+  <img src="Image/Pipeline2-1-2.png" width="800"/>
+</p>
+
+##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
+<p align="center">
+  <img src="Image/Pipeline2-1-3.png" width="800"/>
+  <img src="Image/Pipeline2-1-4.png" width="800"/>
+</p>
+
 ---
+
+
+
 
 #### Step 3 Insert and Select Data within window time
 
