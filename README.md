@@ -6,8 +6,6 @@
 - Basic standing concept on ksqlDB
 - ksqlDB Data pipeline
 - Operations & Monitoring
-- Recap BAAC solution
-
 
 ## Overview
 ksqlDB is a database for building stream processing applications on top of Apache Kafka. It is **distributed**, **scalable**, **reliable**, and **real-time**. ksqlDB combines the power of real-time stream processing with the approachable feel of a relational database through a familiar, lightweight SQL syntax.
@@ -101,13 +99,13 @@ Aggregate data within time windows for real-time analytics.
 ### Pipeline 1: Transformation, filtering, Aggregate
 #### Step 1 Create source stream
 ```sql
-CREATE STREAM CDC_MF_TXN_RAW_ST_<USER> (
+CREATE STREAM CDC_MF_TXN_RAW_ST (
     raw_message VARCHAR  -- Defines the structure of incoming raw messages
 ) WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_<USER>',   -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN',   -- Source Kafka topic
     VALUE_FORMAT = 'KAFKA',              -- Raw Kafka message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 );
 ```
 
@@ -117,12 +115,12 @@ CREATE STREAM CDC_MF_TXN_RAW_ST_<USER> (
 
 #### Step 2 Transform Data
 ```sql
-CREATE STREAM CDC_MF_TXN_STG_ST_<USER>
+CREATE STREAM CDC_MF_TXN_STG_ST
 WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_STG_ST_<USER>',   -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN_STG_ST',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -143,8 +141,8 @@ SELECT
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST_<USER>
-WHERE TXN_ID NOT IN ('000000','999999') OR CHANNEL != 'Mobile';
+FROM CDC_MF_TXN_RAW_ST
+WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message, '|')[7] != 'Mobile';
 ```
 
 #### Output:
@@ -152,12 +150,12 @@ WHERE TXN_ID NOT IN ('000000','999999') OR CHANNEL != 'Mobile';
 
 #### Step 3 Filtering Reject Condition
 ```sql
-CREATE STREAM CDC_MF_TXN_STG_REJ_ST_<USER>
+CREATE STREAM CDC_MF_TXN_STG_REJ_ST
 WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_STG_REJ_ST_<USER>',  -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN_STG_REJ_ST',  -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -174,12 +172,13 @@ SELECT
 
     -- Account & metadata
     SPLIT(raw_message, '|')[5] AS ACC_NO,
+    MASK_KEEP_LEFT(SPLIT(raw_message, '|')[5], 4, 'X', 'x', 'n', '-') AS ACC_NO_MASK,
     SPLIT(raw_message, '|')[6] AS TXN_DT,
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST_<USER>
-WHERE CHANNEL = 'Mobile';
+FROM CDC_MF_TXN_RAW_ST
+WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 ```
 
 #### Output:
@@ -187,31 +186,37 @@ WHERE CHANNEL = 'Mobile';
 
 #### Step 4 Insert and Select Data
 
+##### 1. Preview Data Before Insertion
+
 ```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+SET 'auto.offset.reset' = 'earliest';
+
+SELECT * FROM CDC_MF_TXN_STG_ST EMIT CHANGES;
 ```
 
 ```sql
 SET 'auto.offset.reset' = 'earliest';
 
--- Select Accept Data 
-SELECT * FROM CDC_MF_TXN_STG_ST_<USER>
+SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 ```
-#### Output:
+
+
+##### Output: No records should be found in the target streams at this stage
+
+
+##### 2. Insert Data
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
+-- Scenario 1: Normal Transaction (ATM) -> Should go to STG
+INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
 
--- Select Reject Data
-Select * From CDC_MF_TXN_STG_REJ_ST_<USER>
+-- Scenario 2: Rejected Transaction (Restricted ID '000000' + Mobile) -> Should go ONLY to REJ (Filtered from STG)
+INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
 
-#### Output:
+##### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
+
 ---
-
 ### Pipeline 2.1: Enrichment Stream with Stream 
 #### Step 1 Create source Stream
 ```SQL
