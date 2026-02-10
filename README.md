@@ -209,7 +209,9 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 ```sql
 -- Scenario 1: Normal Transaction (ATM) -> Should go to STG
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
+```
 
+```sql
 -- Scenario 2: Rejected Transaction (Restricted ID '000000' + Mobile) -> Should go ONLY to REJ (Filtered from STG)
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
@@ -219,6 +221,13 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999
 - **TXN1001** is routed to `CDC_MF_TXN_STG_ST_WORKSHOP` because it uses a valid transaction ID and comes from a non-Mobile channel.
 - **000000** is routed to `CDC_MF_TXN_STG_REJ_ST_WORKSHOP` because it uses a restricted ID and comes from the Mobile channel, which matches the rejection rules.
 
+```sql
+SELECT * FROM CDC_MF_TXN_STG_ST EMIT CHANGES;
+```
+
+```sql
+SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
+```
 
 <p align="center">
   <img src="Image/Pipeline1-7.png" width="1000"/>
@@ -256,7 +265,7 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999
 
 #### Step 1 Create source Stream
 ```SQL
-CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
+CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST (
   ACCOUNT_ID VARCHAR KEY,
   ACCOUNT_NAME VARCHAR,
   ACCOUNT_BALANCE DOUBLE,
@@ -264,10 +273,10 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 ```
 
@@ -283,11 +292,11 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
 ```SQL
 SET 'auto.offset.reset' = 'latest';  -- Ignore existing messages and read new data only
 
-CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER> WITH (
-    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_<USER>', -- Source Kafka topic
+CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST WITH (
+    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM', -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
     A.ACCOUNT_ID as ACCOUNT_ID,
@@ -300,8 +309,8 @@ SELECT
     T.TXN_TYPE as TXN_TYPE,
     T.UPDATE_TS as TRANS_TS,
     A.UPDATE_TS as ACCOUNT_TS
-FROM CDC_DB_MASTER_ACC_RAW_ST_<USER> A
-INNER JOIN CDC_MF_TXN_STG_ST_<USER> T 
+FROM CDC_DB_MASTER_ACC_RAW_ST A
+INNER JOIN CDC_MF_TXN_STG_ST T 
 WITHIN 30 SECONDS  -- Define join window between two streams
 ON A.ACCOUNT_ID = T.ACC_NO;
 ```
@@ -323,16 +332,23 @@ ON A.ACCOUNT_ID = T.ACC_NO;
 
 ```sql
 -- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+-- Step 1: Insert Account Data (Stream Source)
+    -- Note: Logic requires JOIN within 30 seconds.
+INSERT INTO CDC_DB_MASTER_ACC_RAW_ST (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC001', 'John Doe', 10000.00, 'Savings', '2024-02-09T10:00:00.000', 'c');
+INSERT INTO CDC_DB_MASTER_ACC_RAW_ST (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC002', 'Jane Smith', 50000.00, 'Current', '2024-02-09T10:00:00.000', 'c');
 ```
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
+-- Step 2: Insert Transaction Data (Must match Account ID and be within window)
+    -- Matching ACC001 (Should Join)
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN2001|WITHDRAW|W01|1000.00|ACC001|2024-02-09 10:00:10|ATM|2024-02-09 10:00:15');
+    -- wait data > 30 sec
+    -- No Match Account (Should NOT appear in Inner Join)
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN2002|DEPOSIT|D01|500.00|ACC002|2024-02-09 10:00:10|ATM|2024-02-09 10:00:15');
 ```
 #### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
 
@@ -346,6 +362,21 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
   - The transaction arrives outside the 30-second join window,
   - This can also be confirmed by checking the `CURRENT_TIME` column.
 
+```sql
+-- Selecr Source Stream (Transaction Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_MF_TXN_RAW_ST EMIT CHANGES;
+```
+
+```sql
+-- Select Source Stream (Account Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_DB_MASTER_ACC_RAW_ST EMIT CHANGES;
+```
+
+```sql
+-- Select Output Stream (Joined Data)
+SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST EMIT CHANGES;
+```
+
 <p align="center">
   <img src="Image/Pipeline2-1-6.png" width="800"/>
 </p>
@@ -354,7 +385,7 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 ### Pipeline 2.2: Enrichment Stream with Table 
 #### Step 1 Create source Table
 ```SQL
-CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
+CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
   ACCOUNT_ID VARCHAR PRIMARY KEY,
   ACCOUNT_NAME VARCHAR,
   ACCOUNT_BALANCE DOUBLE,
@@ -362,10 +393,10 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 ```
 #### Output:
@@ -378,23 +409,23 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
 #### Step 2 Enrichment Stream with Table
 
 ```SQL
-CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER> WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER>',      -- Source Kafka topic
+---Step 2 Enrichment Stream with Table
+CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST WITH (
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
-    A.STRUCT_KEY AS JOIN_KEY,
+    A.ACCOUNT_ID AS JOIN_KEY,
     T.TXN_ID AS TXN_ID,
     T.TXN_CODE AS TXN_CODE,
     T.TXN_AMT AS TXN_AMT,
-    T.ACCOUNT_ID AS ACCOUNT_ID,
     A.ACCOUNT_NAME AS ACCOUNT_NAME,
     A.ACCOUNT_TYPE AS ACCOUNT_TYPE,
     A.ACCOUNT_BALANCE AS ACCOUNT_BALANCE
-FROM CDC_MF_TXN_STG_ST_<USER> T
-LEFT JOIN CDC_DB_MASTER_ACC_RAW_ST_<USER> A    
+FROM CDC_MF_TXN_STG_ST T
+LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB A    
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
 
@@ -413,42 +444,64 @@ ON T.ACC_NO = A.ACCOUNT_ID;
 
 #### Step 3 Insert and Select Data
 
+
 ```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+-- Step 1: Insert Master Data into TABLE
+-- KSQLDB Table mimics state. Updates to the same key overwrite previous values.
+INSERT INTO CDC_DB_MASTER_ACC_RAW_TB (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC001', 'John Doe', 12000.00, 'Savings', '2024-02-09T12:00:00.000', 'c');
+INSERT INTO CDC_DB_MASTER_ACC_RAW_TB (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC002', 'Jane Smith', 80000.00, 'Current', '2024-02-09T12:00:00.000', 'c');
 ```
-
 ```sql
-SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
+-- Step 2: Insert Transactions
+    -- Case 1: Match Found (Enriched with Name/Balance)
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN3001|PAYMENT|P01|500.00|ACC001|2024-02-09 12:05:00|App|2024-02-09 12:05:05');
+    -- Case 2: No Match Found (Left Join -> Columns will be NULL)
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN3002|PAYMENT|P01|500.00|ACC003|2024-02-09 12:05:00|App|2024-02-09 12:05:05');
+```
+```sql
+-- Step 3: Update Table Data & Retry
+    -- Update ACC001 Balance
+INSERT INTO CDC_DB_MASTER_ACC_RAW_TB (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC001', 'John Doe', 11500.00, 'Savings', '2024-02-09T12:10:00.000', 'u');
+    -- Insert new transaction for ACC001 (Should see new balance)
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN3003|PAYMENT|P01|200.00|ACC001|2024-02-09 12:15:00|App|2024-02-09 12:15:05');
 ```
 #### Output:
 
+- `TXN3001` (ACC001)
+  - Has a matching account record.
+  - Account information is available.
+  - Output contains full account details.
+
+- `TXN3002` (ACC003)
+  - No matching account record exists in the table.
+  - Account fields are returned as `null`.
+
+- `TXN3003` (ACC001)
+  - Matches the latest update of ACC001.
+  - Latest account balance and details are used.
+
+```sql
+-- Select Source Stream (Transaction Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_MF_TXN_RAW_ST EMIT CHANGES;
+```
+```sql
+-- Select Source Stream (Account Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_DB_MASTER_ACC_RAW_TB EMIT CHANGES;
+```
+```sql
+-- Select Output Stream (Enriched Data)
+SET 'auto.offset.reset' = 'latest';
+SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST EMIT CHANGES;
+```
 <p align="center">
   <img src="Image/Pipeline2-2-5.png" width="800"/>
 </p>
-
----
-#### Step 4 Insert and Select Data
-
-```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
-```
-
-```sql
-SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
-```
-#### Output:
 
 ---
 
@@ -456,30 +509,32 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 #### Step 1 Create source Table
 
 ``` SQL
-CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN_<USER>',   -- Source Kafka topic
+---Step 1 Create source Table
+CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB WITH (
+    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 SELECT
     ACC_NO AS ACC_NO,
-    LATEST_BY_OFFSET(TXN_ID) AS TXN_ID,
-    LATEST_BY_OFFSET(TXN_TYPE) AS TXN_TYPE,
-    LATEST_BY_OFFSET(TXN_AMT) AS TXN_AMT,
-    LATEST_BY_OFFSET(TXN_DT) AS TXN_DT
-FROM CDC_MF_TXN_STG_ST_<USER>
+    LATEST_BY_OFFSET(TXN_ID) AS LATEST_TXN_ID,
+    LATEST_BY_OFFSET(TXN_TYPE) AS LATEST_TXN_TYPE,
+    LATEST_BY_OFFSET(TXN_AMT) AS LATEST_TXN_AMT,
+    LATEST_BY_OFFSET(TXN_DT) AS LATEST_TXN_DT
+FROM CDC_MF_TXN_STG_ST
 GROUP BY ACC_NO;
 ```
 
 
 #### Step 2 Enrichment Account Table with Transaction Table
 ```SQL
-CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER> WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_<USER>',      -- Source Kafka topic
+---Step 2 Enrichment Account Table with Transaction Table
+CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST WITH (
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     A.ACCOUNT_ID,
@@ -487,45 +542,49 @@ SELECT
     A.ACCOUNT_TYPE,
     T.LATEST_TXN_ID,
     T.LATEST_TXN_AMT,
-    T.LAST_TXN_TIME
-FROM CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> T
-LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB_<USER> A 
+    T.LATEST_TXN_DT
+FROM CDC_MF_TXN_STG_PREP_JOIN_TB T
+LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB A 
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
 #### Step 3 Insert and Select Data
 
 ```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+-- Pre-requisite: Ensure Table Data exists (Reuse from previous steps or insert again)
+INSERT INTO CDC_DB_MASTER_ACC_RAW_TB (ACCOUNT_ID, ACCOUNT_NAME, ACCOUNT_BALANCE, ACCOUNT_TYPE, UPDATE_TS, __OP) 
+VALUES ('ACC001', 'John Doe', 15000.00, 'Savings', '2024-02-09T14:00:00.000', 'c');
+```
+```sql
+-- Insert Transactions to trigger aggregations
+-- The pipeline aggregates TXNs by ACC_NO to get LATEST_BY_OFFSET
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN4001|TRANSFER|T01|1000.00|ACC001|2024-02-09 14:00:00|ATM|2024-02-09 14:00:05');
 ```
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
+-- Monitor: Output should show TXN4001 as latest for ACC001
 
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
+-- Send another transaction
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) 
+VALUES ('TXN4002|TRANSFER|T01|2000.00|ACC001|2024-02-09 14:01:00|ATM|2024-02-09 14:01:05');
 ```
 #### Output:
----
-#### Step 4 Insert and Select Data
-
 ```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+-- Monitor Source Table (Transaction Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_MF_TXN_RAW_ST EMIT CHANGES;
 ```
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
+-- Monitor Source Table (Account Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_DB_MASTER_ACC_RAW_TB EMIT CHANGES;
 ```
-#### Output:
+```sql
+-- Monitor Output Table (Aggregated & Enriched)
+SET 'auto.offset.reset' = 'latest';
+SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST EMIT CHANG
+```
 ---
+
 
 ### Pipeline 3: Aggregation and Window time
 
@@ -551,12 +610,12 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>
 
 #### Step 1 Create source stream
 ```SQL
-CREATE STREAM MB_LOGIN_EVENTS_RAW_ST_<USER> (
+CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
     USER_ID VARCHAR KEY,
     DEVICE_TYPE VARCHAR, -- iOS, Android, Web
     LOGIN_STATUS VARCHAR -- SUCCESS, FAIL
 ) WITH (
-  KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST_<USER>',      -- Source Kafka topic
+  KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
   REPLICAS = 3                   -- Replication factor for fault tolerance
@@ -565,8 +624,8 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST_<USER> (
 
 #### Step 2 Create Aggregation data with Tumbling window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST_<USER> WITH (
-    KAFKA_TOPIC = 'BAAC_AGG_LOGIN_TUMBLING_<USER>',      -- Source Kafka topic
+CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST WITH (
+    KAFKA_TOPIC = 'BAAC_AGG_LOGIN_TUMBLING',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
     REPLICAS = 3                   -- Replication factor for fault tolerance
@@ -576,7 +635,7 @@ SELECT
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM MB_LOGIN_EVENTS_RAW_ST_<USER>
+FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW TUMBLING (SIZE 30 SECONDS)
 GROUP BY USER_ID;
 ```
@@ -593,13 +652,13 @@ INSERT INTO
 SET 'auto.offset.reset' = 'earliest';
 
 -- Select Accept Data 
-SELECT * FROM BAAC_AGG_LOGIN_TUMBLING_TB_<USER>
+SELECT * FROM BAAC_AGG_LOGIN_TUMBLING_TB
 ```
 
 #### Step 4 Create Aggregation data with Hopping window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> WITH (
-    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING_<USER>',      -- Source Kafka topic
+CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
     REPLICAS = 3                   -- Replication factor for fault tolerance
@@ -609,7 +668,7 @@ SELECT
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM MB_LOGIN_EVENTS_RAW_ST_<USER>
+FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
 GROUP BY USER_ID;
 ```
@@ -627,13 +686,13 @@ INSERT INTO
 SET 'auto.offset.reset' = 'earliest';
 
 -- Select Accept Data 
-SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER>
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB
 ```
 
 #### Step 6 Create Aggregation data with Session window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB_<USER> WITH (
-    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION_<USER>',    -- Source Kafka topic
+CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION',    -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
     REPLICAS = 3                   -- Replication factor for fault tolerance
@@ -661,7 +720,7 @@ INSERT INTO
 SET 'auto.offset.reset' = 'earliest';
 
 -- Select Accept Data 
-SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB_<USER>
+SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB
 ```
 
 
