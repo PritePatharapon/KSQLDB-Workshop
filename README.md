@@ -369,6 +369,10 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
 );
 ```
 #### Output:
+<p align="center">
+  <img src="Image/Pipeline2-2-1.png" width="800"/>
+</p>
+
 ---
 
 #### Step 2 Enrichment Stream with Table
@@ -393,6 +397,20 @@ FROM CDC_MF_TXN_STG_ST_<USER> T
 LEFT JOIN CDC_DB_MASTER_ACC_RAW_ST_<USER> A    
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
+
+#### Output:
+<p align="center">
+  <img src="Image/Pipeline2-2-2.png" width="800"/>
+</p>
+
+##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
+<p align="center">
+  <img src="Image/Pipeline2-2-3.png" width="800"/>
+  <img src="Image/Pipeline2-2-4.png" width="800"/>
+</p>
+
+
+
 #### Step 3 Insert and Select Data
 
 ```sql
