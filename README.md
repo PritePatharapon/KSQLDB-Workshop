@@ -319,9 +319,6 @@ ON A.ACCOUNT_ID = T.ACC_NO;
 
 ---
 
-
-
-
 #### Step 3 Insert and Select Data within window time
 
 ```sql
@@ -338,6 +335,10 @@ SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 ```
 #### Output:
+
+<p align="center">
+  <img src="Image/Pipeline2-1-6.png" width="800"/>
+</p>
 
 ---
 
