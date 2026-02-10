@@ -51,13 +51,14 @@ ksqlDB provides three main ways to interact with the system and execute SQL comm
 3. Confluent Control Center  
    Execute SQL commands and monitor queries through the web-based user interface.
 
+<p align="center">
+  <img src="Image/C3.png" width="800"/>
+</p>
 
-
-ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+<p align="center"> <small><em> ksqlDB allows us to read, filter, transform, or otherwise process streams and tables of events, which are backed by Kafka topics. We can also join streams and/or tables to meet the needs of our application. And we can do all of this using familiar SQL syntax.
+ </em></small> </p>
 
 ---
-
-
 
 ## Basic standing concept on ksqlDB
 ### Stream and Table
