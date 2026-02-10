@@ -195,7 +195,7 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
   <img src="Image/Pipeline1-3.png" width="1000"/>
 </p>
 
-##### Remarks: After running the CREATE STREAM command, make sure that both the stream and the Kafka topic are created correctly.
+##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
 <p align="center">
   <img src="Image/Pipeline1-4.png" width="1000"/>
   <img src="Image/Pipeline1-5.png" width="1000"/>
