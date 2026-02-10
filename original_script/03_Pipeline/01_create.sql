@@ -7,7 +7,7 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST_<USER> (
   KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST_<USER>',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 
 ---Step 2 Create Aggregation data with Tumbling window
@@ -15,7 +15,7 @@ CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST_<USER> WITH (
     KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_TUMBLING_<USER>',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
@@ -31,7 +31,7 @@ CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> WITH (
     KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING_<USER>',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
@@ -47,7 +47,7 @@ CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB_<USER> WITH (
     KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION_<USER>',    -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,

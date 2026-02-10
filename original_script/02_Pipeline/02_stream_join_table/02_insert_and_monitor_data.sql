@@ -1,3 +1,9 @@
+-- Monitor Source Stream (Transaction Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_MF_TXN_RAW_ST_<USER> EMIT CHANGES;
+
+-- Monitor Source Stream (Account Data)
+SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_DB_MASTER_ACC_RAW_TB_<USER> EMIT CHANGES;
+
 -- Monitor Output Stream (Enriched Data)
 SET 'auto.offset.reset' = 'latest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER> EMIT CHANGES;

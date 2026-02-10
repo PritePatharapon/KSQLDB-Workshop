@@ -5,7 +5,7 @@ CREATE STREAM CDC_MF_TXN_RAW_ST_<USER> (
     KAFKA_TOPIC = 'CDC_MF_TXN_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'KAFKA',              -- Raw Kafka message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 );
 
 --- Step 2: Transform Data
@@ -14,7 +14,7 @@ WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_ST_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -44,7 +44,7 @@ WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_REJ_ST_<USER>',  -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT

@@ -10,7 +10,7 @@ CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB_<USER> (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 
 ---Step 2 Enrichment Stream with Table
@@ -18,7 +18,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER> WITH (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER>',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
     A.ACCOUNT_ID AS JOIN_KEY,

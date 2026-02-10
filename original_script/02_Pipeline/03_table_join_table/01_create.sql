@@ -3,7 +3,7 @@ CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 3                         -- Replication factor for fault tolerance
+    REPLICAS = 1                         -- Replication factor for fault tolerance
 ) AS
 SELECT
     ACC_NO AS ACC_NO,
@@ -19,7 +19,7 @@ CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER> WITH (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_<USER>',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     A.ACCOUNT_ID,

@@ -10,7 +10,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 
 --- Step 2 Create source Stream
@@ -20,7 +20,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER> WITH (
     KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_<USER>', -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
     A.ACCOUNT_ID as ACCOUNT_ID,
