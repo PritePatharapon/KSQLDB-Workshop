@@ -227,6 +227,19 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999
 ---
 
 ### Pipeline 2.1: Enrichment Stream with Stream 
+
+Basic Join concept on ksqlDB
+- Stream and Stream
+- Stream and Table
+- Table and Table
+
+| Join Type      | Windowed?     | INNER Join | LEFT OUTER Join | RIGHT OUTER Join | FULL OUTER Join |
+|----------------|---------------|------------|------------------|------------------|------------------|
+| Stream-Stream  | Windowed      | Supported  | Supported        | Supported        | Supported        |
+| Table-Table    | Non-windowed  | Supported  | Supported        | Supported        | Supported        |
+| Stream-Table   | Non-windowed  | Supported  | Supported        | Not Supported    | Not Supported    |
+
+
 #### Step 1 Create source Stream
 ```SQL
 CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
