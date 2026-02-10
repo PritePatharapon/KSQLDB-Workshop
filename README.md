@@ -228,8 +228,7 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999
 ---
 
 ### Pipeline 2.1: Enrichment Stream with Stream 
-
-Basic Join concept on ksqlDB
+#### Basic Join concept on ksqlDB
 - **Stream and Stream**
   you must specify a windowing scheme by using the WITHIN clause. A new input record on one side produces a join output for each matching record on the other side, and there can be multiple such matching records within a join window.
 - **Stream and Table**
@@ -237,12 +236,18 @@ Basic Join concept on ksqlDB
 - **Table and Table**
   Joins the current/latest values from both tables using the same key.
 
+<div align="center">
+  
 | Join Type      | Windowed?     | INNER Join | LEFT OUTER Join | RIGHT OUTER Join | FULL OUTER Join |
 |----------------|---------------|------------|------------------|------------------|------------------|
 | Stream-Stream  | Windowed      | Supported  | Supported        | Supported        | Supported        |
 | Table-Table    | Non-windowed  | Supported  | Supported        | Supported        | Supported        |
 | Stream-Table   | Non-windowed  | Supported  | Supported        | Not Supported    | Not Supported    |
 
+  <small><em>
+    Join Capabilities.
+  </em></small>
+</div>
 
 #### Step 1 Create source Stream
 ```SQL
@@ -355,10 +360,6 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
 ---
 
 #### Step 2 Enrichment Stream with Table
-#### Basic Join Concept on ksqlDB
-- Stream-Stream Joins
-- Stream-Table Joins
-- Table-Table Joins
 
 ```SQL
 CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER> WITH (
