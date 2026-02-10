@@ -194,7 +194,7 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
   <img src="Image/Pipeline1-3.png" width="1000"/>
 </p>
 
-##### After running the CREATE STREAM command, make sure that both the stream and the Kafka topic are created correctly.
+##### Remarks: After running the CREATE STREAM command, make sure that both the stream and the Kafka topic are created correctly.
 <p align="center">
   <img src="Image/Pipeline1-4.png" width="1000"/>
   <img src="Image/Pipeline1-5.png" width="1000"/>
@@ -205,23 +205,6 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 
 #### Step 4 Insert and Select Data
 
-##### 1. Preview Data Before Insertion
-
-```sql
-SELECT * FROM CDC_MF_TXN_STG_ST EMIT CHANGES;
-```
-
-```sql
-SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
-```
-
-
-##### Output: No records should be found in the target streams at this stage
-<p align="center">
-  <img src="Image/Pipeline1-6.png" width="1000"/>
-</p>
-
-##### 2. Insert Data
 ```sql
 -- Scenario 1: Normal Transaction (ATM) -> Should go to STG
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
@@ -229,11 +212,6 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00
 -- Scenario 2: Rejected Transaction (Restricted ID '000000' + Mobile) -> Should go ONLY to REJ (Filtered from STG)
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
-
-<p align="center">
-  <img src="Image/Pipeline1-8.png" width="1000"/>
-</p>
-
 
 ##### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
 <p align="center">
@@ -360,6 +338,11 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_TB_<USER> (
 ---
 
 #### Step 2 Enrichment Stream with Table
+#### Basic Join Concept on ksqlDB
+- Stream-Stream Joins
+- Stream-Table Joins
+- Table-Table Joins
+
 ```SQL
 CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER> WITH (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST_<USER>',      -- Source Kafka topic
