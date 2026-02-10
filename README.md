@@ -427,6 +427,11 @@ SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 ```
 #### Output:
+
+<p align="center">
+  <img src="Image/Pipeline2-2-5.png" width="800"/>
+</p>
+
 ---
 #### Step 4 Insert and Select Data
 
