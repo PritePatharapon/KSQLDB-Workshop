@@ -208,14 +208,10 @@ WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 ##### 1. Preview Data Before Insertion
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
-
 SELECT * FROM CDC_MF_TXN_STG_ST EMIT CHANGES;
 ```
 
 ```sql
-SET 'auto.offset.reset' = 'earliest';
-
 SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 ```
 
@@ -226,9 +222,6 @@ SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 </p>
 
 ##### 2. Insert Data
-<p align="center">
-  <img src="Image/Pipeline1-8.png" width="1000"/>
-</p>
 ```sql
 -- Scenario 1: Normal Transaction (ATM) -> Should go to STG
 INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
@@ -237,13 +230,20 @@ INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('TXN1001|DEPOSIT|D01|
 INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
 
+<p align="center">
+  <img src="Image/Pipeline1-8.png" width="1000"/>
+</p>
+
+
 ##### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
 <p align="center">
   <img src="Image/Pipeline1-7.png" width="1000"/>
-  <img src="Image/Pipeline1-7.png" width="1000"/>
-  <img src="Image/Pipeline1-7.png" width="1000"/>
+  <img src="Image/Pipeline1-9.png" width="1000"/>
+  <img src="Image/Pipeline1-12.png" width="1000"/>
 </p>
+
 ---
+
 ### Pipeline 2.1: Enrichment Stream with Stream 
 #### Step 1 Create source Stream
 ```SQL
@@ -266,6 +266,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
 ---
 
 #### Step 2 Enrich Stream and Stream
+
 ```SQL
 SET 'auto.offset.reset' = 'latest';  -- Ignore existing messages and read new data only
 
