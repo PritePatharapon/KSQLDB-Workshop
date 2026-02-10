@@ -334,32 +334,21 @@ SET 'auto.offset.reset' = 'earliest';
 -- Select Accept Data 
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
 ```
-#### Output:
+#### Output: Verify that normal transactions appear in the accepted stream and rejected transactions appear in the reject stream
+
+- `TXN2001` appears in the joined stream because:
+  - It has a matching `ACCOUNT_ID` in the account stream, and
+  - The transaction and account records arrive within the 30-second join window,
+  - The timing can be verified using the `CURRENT_TIME` column.
+
+- `TXN2002` does **not appear** in the joined stream because:
+  - There is no matching `ACCOUNT_ID` in the account stream, **or**
+  - The transaction arrives outside the 30-second join window,
+  - This can also be confirmed by checking the `CURRENT_TIME` column.
 
 <p align="center">
   <img src="Image/Pipeline2-1-6.png" width="800"/>
 </p>
-
----
-
-
-#### Step 4 Insert and Select Data without window time
-
-```sql
--- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
-```
-
-```sql
-SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>
-```
-#### Output:
-
 ---
 
 ### Pipeline 2.2: Enrichment Stream with Table 
