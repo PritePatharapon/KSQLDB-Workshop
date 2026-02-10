@@ -1,4 +1,5 @@
 -- Monitor Output Table (Aggregated & Enriched)
+SET 'auto.offset.reset' = 'latest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER> EMIT CHANGES;
 
 -- Pre-requisite: Ensure Table Data exists (Reuse from previous steps or insert again)
