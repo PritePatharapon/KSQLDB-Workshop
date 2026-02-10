@@ -224,10 +224,10 @@ SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 ##### 2. Insert Data
 ```sql
 -- Scenario 1: Normal Transaction (ATM) -> Should go to STG
-INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00|ACC001|2024-02-09 10:00:00|ATM|2024-02-09 10:00:05');
 
 -- Scenario 2: Rejected Transaction (Restricted ID '000000' + Mobile) -> Should go ONLY to REJ (Filtered from STG)
-INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
+INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
 
 <p align="center">
@@ -241,6 +241,10 @@ INSERT INTO CDC_MF_TXN_RAW_ST_<USER> (raw_message) VALUES ('000000|TEST|X00|0.00
   <img src="Image/Pipeline1-9.png" width="1000"/>
   <img src="Image/Pipeline1-12.png" width="1000"/>
 </p>
+<p align="center"> <small><em> </em></small> </p>
+
+<p align="center"> <small><em> You can verify that records are available in both the Kafka topic and the stream.
+ </em></small> </p>
 
 ---
 
