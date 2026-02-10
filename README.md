@@ -230,9 +230,12 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999
 ### Pipeline 2.1: Enrichment Stream with Stream 
 
 Basic Join concept on ksqlDB
-- Stream and Stream
-- Stream and Table
-- Table and Table
+- **Stream and Stream**
+  you must specify a windowing scheme by using the WITHIN clause. A new input record on one side produces a join output for each matching record on the other side, and there can be multiple such matching records within a join window.
+- **Stream and Table**
+  joins are always non-windowed joins. You can perform table lookups against a table when a new record arrives on the stream. Only events arriving on the stream side trigger downstream updates and produce join output. Updates on the table side don’t produce updated join output.
+- **Table and Table**
+  Joins the current/latest values from both tables using the same key.
 
 | Join Type      | Windowed?     | INNER Join | LEFT OUTER Join | RIGHT OUTER Join | FULL OUTER Join |
 |----------------|---------------|------------|------------------|------------------|------------------|
