@@ -499,6 +499,8 @@ SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME 
 SET 'auto.offset.reset' = 'latest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST EMIT CHANGES;
 ```
+
+#### Output:
 <p align="center">
   <img src="Image/Pipeline2-2-5.png" width="800"/>
 </p>
@@ -526,6 +528,12 @@ FROM CDC_MF_TXN_STG_ST
 GROUP BY ACC_NO;
 ```
 
+#### Output:
+
+<p align="center">
+  <img src="Image/Pipeline2-3-1.png" width="800"/>
+</p>
+
 
 #### Step 2 Enrichment Account Table with Transaction Table
 ```SQL
@@ -547,6 +555,13 @@ FROM CDC_MF_TXN_STG_PREP_JOIN_TB T
 LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB A 
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
+
+#### Output:
+
+<p align="center">
+  <img src="Image/Pipeline2-3-2.png" width="800"/>
+</p
+
 #### Step 3 Insert and Select Data
 
 ```sql
@@ -569,6 +584,15 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message)
 VALUES ('TXN4002|TRANSFER|T01|2000.00|ACC001|2024-02-09 14:01:00|ATM|2024-02-09 14:01:05');
 ```
 #### Output:
+
+- TXN4001 (ACC001)
+  - Initial transaction received
+  - Stored as the latest record for ACC001
+
+- TXN4002 (ACC001)
+  - More recent transaction
+  - Updates and overwrites TXN4001 using LATEST_BY_OFFSET
+  
 ```sql
 -- Monitor Source Table (Transaction Data)
 SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME FROM CDC_MF_TXN_RAW_ST EMIT CHANGES;
@@ -583,6 +607,10 @@ SELECT *, TIMESTAMPTOSTRING(ROWTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS CURRENT_TIME 
 SET 'auto.offset.reset' = 'latest';
 SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST EMIT CHANG
 ```
+<p align="center">
+  <img src="Image/Pipeline2-3-3.png" width="800"/>
+</p
+
 ---
 
 
