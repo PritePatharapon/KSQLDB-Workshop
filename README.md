@@ -333,12 +333,6 @@ ON A.ACCOUNT_ID = T.ACC_NO;
   <img src="Image/Pipeline2-1-2.png" width="800"/>
 </p>
 
-##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
-<p align="center">
-  <img src="Image/Pipeline2-1-3.png" width="800"/>
-  <img src="Image/Pipeline2-1-4.png" width="800"/>
-</p>
-
 ---
 
 #### Step 3 Insert and Select Data within window time
@@ -450,13 +444,6 @@ ON T.ACC_NO = A.ACCOUNT_ID;
 <p align="center">
   <img src="Image/Pipeline2-2-2.png" width="800"/>
 </p>
-
-##### Note: After running the `CREATE STREAM` command, make sure that both the stream and the Kafka topic are created correctly.
-<p align="center">
-  <img src="Image/Pipeline2-2-3.png" width="800"/>
-  <img src="Image/Pipeline2-2-4.png" width="800"/>
-</p>
-
 
 
 #### Step 3 Insert and Select Data
