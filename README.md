@@ -84,7 +84,7 @@ You can use ksqlDB to build a materialized view of state on a specific server by
 ## ksqlDB Data pipeline
 
 <p align="center">
-  <img src="Image/Workshop.drawio.svg" width="1000"/>
+  <img src="Image/Workshop.drawio.svg" width="800"/>
 </p>
 
 
@@ -100,6 +100,11 @@ Aggregate data within time windows for real-time analytics.
 ---
 
 ### Pipeline 1: Transformation, filtering, Aggregate
+
+<p align="center">
+  <img src="Image/Pipeline1.drawio.svg" width="800"/>
+</p>
+
 #### Step 1 Create source stream
 ```sql
 CREATE STREAM CDC_MF_TXN_RAW_ST (
@@ -244,6 +249,12 @@ SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 ---
 
 ### Pipeline 2.1: Enrichment Stream with Stream 
+
+<p align="center">
+  <img src="Image/Pipeline2-1.drawio.svg" width="800"/>
+</p>
+
+
 #### Basic Join concept on ksqlDB
 - **Stream and Stream**
   you must specify a windowing scheme by using the WITHIN clause. A new input record on one side produces a join output for each matching record on the other side, and there can be multiple such matching records within a join window.
@@ -385,6 +396,11 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST EMIT CHANGES;
 ---
 
 ### Pipeline 2.2: Enrichment Stream with Table 
+
+<p align="center">
+  <img src="Image/Pipeline2-2.drawio.svg" width="800"/>
+</p>
+
 #### Step 1 Create source Table
 ```SQL
 CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
@@ -508,6 +524,11 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST EMIT CHANGES;
 ---
 
 ### Pipeline 2.3: Enrichment Table with Table 
+
+<p align="center">
+  <img src="Image/Pipeline2-3.drawio.svg" width="800"/>
+</p>
+
 #### Step 1 Create source Table
 
 ``` SQL
@@ -615,6 +636,10 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST EMIT CHANG
 
 
 ### Pipeline 3: Aggregation and Window time
+
+<p align="center">
+  <img src="Image/Pipeline3.drawio.svg" width="800"/>
+</p>
 
 #### Basic window type on ksqlDB
 <p align="center">
