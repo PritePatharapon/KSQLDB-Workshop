@@ -84,7 +84,10 @@ You can use ksqlDB to build a materialized view of state on a specific server by
 ## ksqlDB Data pipeline
 ### Overview Data pipeline
 
-Diagram
+<p align="center">
+  <img src="Image/Workshop.drawio.svc" width="300"/>
+</p>
+
 
 **Pipeline 1**: Transformation & Filtering  
 Transform raw data into structured format and filter invalid records.
@@ -405,7 +408,6 @@ CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
 </p>
 
 ---
-
 #### Step 2 Enrichment Stream with Table
 
 ```SQL
@@ -443,7 +445,6 @@ ON T.ACC_NO = A.ACCOUNT_ID;
 
 
 #### Step 3 Insert and Select Data
-
 
 ```sql
 -- Step 1: Insert Master Data into TABLE
