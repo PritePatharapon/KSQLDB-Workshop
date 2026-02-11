@@ -758,24 +758,24 @@ GROUP BY USER_ID;
 #### Output:
 For user **USER02**, the login events are grouped into overlapping **hopping windows** as follows:
 
-### Window 1: 16:53:10 – 16:53:40
+##### Window 1: 16:53:10 – 16:53:40
 - First hopping window
 - **Total login count: 1 event**
 - One aggregated record was generated
 
-### Window 2: 16:53:20 – 16:53:50
+##### Window 2: 16:53:20 – 16:53:50
 - Overlaps with the previous window
 - Some events are counted again
 - **Total login count: 2 events**
 - One aggregated record was generated
 
-### Window 3: 16:53:30 – 16:54:00
+##### Window 3: 16:53:30 – 16:54:00
 - Sliding window continues
 - Overlapping behavior is maintained
 - **Total login count: 2 events**
 - One aggregated record was generated
 
-### Window 4: 16:53:40 – 16:54:10
+##### Window 4: 16:53:40 – 16:54:10
 - Window shifts forward
 - Fewer events matched in this period
 - **Total login count: 1 event**
@@ -865,6 +865,19 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 
 #### Output:
 
+For user **USER03**, the login events are grouped into **session windows** based on inactivity gaps as follows:
+
+##### Session 1: 17:01:40 – 17:01:40
+- First active session detected
+- Events occurred close together
+- **Total login count: 3 events**
+- One session record was generated
+
+##### Session 2: 17:02:26 – 17:02:26
+- New session started after inactivity gap
+- Previous session was closed
+- **Total login count: 4 events**
+- A separate session record was generated
 -- Select Session Window
 SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB WHERE USER_ID = 'USER03';
