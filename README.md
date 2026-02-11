@@ -712,6 +712,21 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'Android', 'FAIL');
 ```
 #### Output:
+
+For user **USER04**, the login events are grouped into two **30-second tumbling windows** as follows:
+
+##### Session 1: 17:08:00 – 17:08:30
+- Login events occurred within this time window
+- All events were aggregated together
+- **Total login count: 3 events**
+- One aggregated record was generated
+
+##### Session 2: 17:08:30 – 17:09:00
+- New login events arrived in the next window
+- A new aggregation window was created
+- **Total login count: 4 events**
+- A separate aggregated record was generated
+
 ```sql
 -- Select Tumbling Window
 SET 'auto.offset.reset' = 'earliest';
@@ -719,7 +734,7 @@ SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST WHERE USER_ID = 'USER04';
 ```
 
 <p align="center">
-  <img src="Image/Pipeline3-4.png" width="800"/>
+  <img src="Image/Pipeline3-5.png" width="800"/>
 </p>
 ---
 
@@ -741,7 +756,35 @@ WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
 GROUP BY USER_ID;
 ```
 #### Output:
+For user **USER02**, the login events are grouped into overlapping **hopping windows** as follows:
 
+### Window 1: 16:53:10 – 16:53:40
+- First hopping window
+- **Total login count: 1 event**
+- One aggregated record was generated
+
+### Window 2: 16:53:20 – 16:53:50
+- Overlaps with the previous window
+- Some events are counted again
+- **Total login count: 2 events**
+- One aggregated record was generated
+
+### Window 3: 16:53:30 – 16:54:00
+- Sliding window continues
+- Overlapping behavior is maintained
+- **Total login count: 2 events**
+- One aggregated record was generated
+
+### Window 4: 16:53:40 – 16:54:10
+- Window shifts forward
+- Fewer events matched in this period
+- **Total login count: 1 event**
+- One aggregated record was generated
+
+```sql
+SET 'auto.offset.reset' = 'earliest';
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> WHERE USER_ID = 'USER02';
+```
 <p align="center">
   <img src="Image/Pipeline3-3.png" width="800"/>
 </p>
@@ -771,6 +814,10 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB WHERE USER_ID = 'USER02';
 ```
+
+<p align="center">
+  <img src="Image/Pipeline3-6.png" width="800"/>
+</p>
 ---
 
 #### Step 6 Create Aggregation data with Session window
@@ -822,7 +869,9 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB WHERE USER_ID = 'USER03';
 
-
+<p align="center">
+  <img src="Image/Pipeline3-7.png" width="800"/>
+</p>
 ---
 
 ## Operations & Monitoring
