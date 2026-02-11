@@ -661,13 +661,11 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
   REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 ```
-
 #### Output:
 
 <p align="center">
   <img src="Image/Pipeline3-1.png" width="800"/>
 </p>
-
 ---
 
 #### Step 2 Create Aggregation data with Tumbling window
@@ -687,8 +685,8 @@ FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW TUMBLING (SIZE 30 SECONDS)
 GROUP BY USER_ID;
 ```
-#### Output:
 
+#### Output:
 <p align="center">
   <img src="Image/Pipeline3-2.png" width="800"/>
 </p>
@@ -719,6 +717,10 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST WHERE USER_ID = 'USER04';
 ```
+
+<p align="center">
+  <img src="Image/Pipeline3-4.png" width="800"/>
+</p>
 ---
 
 #### Step 4 Create Aggregation data with Hopping window
@@ -815,7 +817,6 @@ INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES (
 ```
 
 #### Output:
-
 
 -- Select Session Window
 SET 'auto.offset.reset' = 'earliest';
