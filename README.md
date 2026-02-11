@@ -84,7 +84,7 @@ You can use ksqlDB to build a materialized view of state on a specific server by
 ## ksqlDB Data pipeline
 
 <p align="center">
-  <img src="Image/Workshop.drawio.svg" width="800"/>
+  <img src="Image/Workshop.drawio.svg" width="1000"/>
 </p>
 
 
