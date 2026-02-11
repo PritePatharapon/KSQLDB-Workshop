@@ -658,17 +658,25 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
   KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 3                   -- Replication factor for fault tolerance
+  REPLICAS = 1                   -- Replication factor for fault tolerance
 );
 ```
+
+#### Output:
+
+<p align="center">
+  <img src="Image/Pipeline3-1" width="800"/>
+</p>
+
+---
 
 #### Step 2 Create Aggregation data with Tumbling window
 ```SQL
 CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST WITH (
-    KAFKA_TOPIC = 'BAAC_AGG_LOGIN_TUMBLING',      -- Source Kafka topic
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_TUMBLING',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
@@ -679,21 +687,35 @@ FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW TUMBLING (SIZE 30 SECONDS)
 GROUP BY USER_ID;
 ```
+#### Output:
+
+---
+
+
 #### Step 3 Insert and Select Data
 
 ```sql
 -- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
-```
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'Android', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'iOS', 'FAIL');
 
+-- 3. wait above 30 sec for new window
+-- Wait > 30 seconds manually
+
+-- 4. INSERT DATA 4 DATA
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'Android', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER04', 'Android', 'FAIL');
+```
+#### Output:
 ```sql
+-- Select Tumbling Window
 SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM BAAC_AGG_LOGIN_TUMBLING_TB
+SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST WHERE USER_ID = 'USER04';
 ```
+---
 
 #### Step 4 Create Aggregation data with Hopping window
 ```SQL
@@ -701,7 +723,7 @@ CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB WITH (
     KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
@@ -712,22 +734,35 @@ FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
 GROUP BY USER_ID;
 ```
+#### Output:
+
+---
+
+
 
 #### Step 5 Insert and Select Data
 
 ```sql
 -- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER02', 'iOS', 'SUCCESS');
+
+-- 2. wait 10-15 sec INSERT DATA 2 DATA (PROVE HOPPING)
+-- Wait about 10-15 seconds manually
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER02', 'iOS', 'SUCCESS');
+
+-- 3. wait above 60 sec for new window
+-- Wait > 60 seconds manually
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER02', 'iOS', 'SUCCESS');
 ```
+
+#### Output:
 
 ```sql
+-- Select Hopping Window
 SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB WHERE USER_ID = 'USER02';
 ```
+---
 
 #### Step 6 Create Aggregation data with Session window
 ```SQL
@@ -735,14 +770,14 @@ CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB WITH (
     KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION',    -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 3                   -- Replication factor for fault tolerance
+    REPLICAS = 1                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM BAAC_RAW_LOGIN_EVENTS_ST
+FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW SESSION (30 SECONDS)
 GROUP BY USER_ID;
 ```
@@ -751,17 +786,26 @@ GROUP BY USER_ID;
 
 ```sql
 -- Insert Data 
-INSERT INTO
-INSERT INTO
-INSERT INTO
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'Android', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'iOS', 'FAIL');
+
+-- 3. wait above 30 sec for new window
+-- Wait > 30 seconds manually
+
+-- 4. INSERT DATA 4 DATA
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'Android', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'iOS', 'SUCCESS');
+INSERT INTO MB_LOGIN_EVENTS_RAW_ST (USER_ID, DEVICE_TYPE, LOGIN_STATUS) VALUES ('USER03', 'Android', 'FAIL');
 ```
 
-```sql
+#### Output:
+
+
+-- Select Session Window
 SET 'auto.offset.reset' = 'earliest';
-
--- Select Accept Data 
-SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB
-```
+SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB WHERE USER_ID = 'USER03';
 
 
 
