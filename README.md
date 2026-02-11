@@ -665,7 +665,7 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
 #### Output:
 
 <p align="center">
-  <img src="Image/Pipeline3-1" width="800"/>
+  <img src="Image/Pipeline3-1.png" width="800"/>
 </p>
 
 ---
@@ -688,6 +688,10 @@ WINDOW TUMBLING (SIZE 30 SECONDS)
 GROUP BY USER_ID;
 ```
 #### Output:
+
+<p align="center">
+  <img src="Image/Pipeline3-2.png" width="800"/>
+</p>
 
 ---
 
@@ -736,6 +740,9 @@ GROUP BY USER_ID;
 ```
 #### Output:
 
+<p align="center">
+  <img src="Image/Pipeline3-3.png" width="800"/>
+</p>
 ---
 
 
@@ -780,7 +787,14 @@ SELECT
 FROM MB_LOGIN_EVENTS_RAW_ST
 WINDOW SESSION (30 SECONDS)
 GROUP BY USER_ID;
+
 ```
+#### Output:
+
+<p align="center">
+  <img src="Image/Pipeline3-4.png" width="800"/>
+</p>
+
 
 #### Step 7 Insert and Select Data
 
@@ -808,7 +822,7 @@ SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB WHERE USER_ID = 'USER03';
 
 
-
+---
 
 ## Operations & Monitoring
 ### Logging
