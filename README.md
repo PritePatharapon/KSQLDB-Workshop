@@ -783,7 +783,7 @@ For user **USER02**, the login events are grouped into overlapping **hopping win
 
 ```sql
 SET 'auto.offset.reset' = 'earliest';
-SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB_<USER> WHERE USER_ID = 'USER02';
+SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB WHERE USER_ID = 'USER02';
 ```
 <p align="center">
   <img src="Image/Pipeline3-3.png" width="800"/>
@@ -878,13 +878,17 @@ For user **USER03**, the login events are grouped into **session windows** based
 - Previous session was closed
 - **Total login count: 4 events**
 - A separate session record was generated
--- Select Session Window
+
+
+```sql
 SET 'auto.offset.reset' = 'earliest';
 SELECT * FROM MB_LOGIN_EVENTS_STG_SESSION_TB WHERE USER_ID = 'USER03';
+```
 
 <p align="center">
   <img src="Image/Pipeline3-7.png" width="800"/>
 </p>
+
 ---
 
 ## Operations & Monitoring
