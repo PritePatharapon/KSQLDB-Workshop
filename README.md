@@ -1,5 +1,5 @@
 # ksqlDB Workshop — Getting Started with Streaming SQL
-## Agendar
+## Agenda
 - [Overview](#overview)
 - [How ksqlDB work with Kafka](#how-ksqldb-work-with-kafka)
 - [Way to interact with ksqlDB](#way-to-interact-with-ksqldb)
