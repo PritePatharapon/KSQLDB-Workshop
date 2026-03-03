@@ -1,5 +1,5 @@
 --- Step 1 Create source Stream
-CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
+CREATE STREAM "CDC-DB-MASTER-ACC-RAW-ST-<USER>" (
   ACCOUNT_ID VARCHAR KEY,
   ACCOUNT_NAME VARCHAR,
   ACCOUNT_BALANCE DOUBLE,
@@ -7,7 +7,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_RAW_ST_<USER>',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC-DB-MASTER-ACC-RAW-ST-<USER>',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
   REPLICAS = 1                   -- Replication factor for fault tolerance
@@ -16,8 +16,8 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
 --- Step 2 Create source Stream
 SET 'auto.offset.reset' = 'latest';  -- Ignore existing messages and read new data only
 
-CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER> WITH (
-    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>', -- Source Kafka topic
+CREATE STREAM "CDC-DB-MASTER-ACC-STG-JOIN-STREAM-STREAM-ST-<USER>" WITH (
+    KAFKA_TOPIC = 'CDC-DB-MASTER-ACC-STG-JOIN-STREAM-STREAM-ST-<USER>', -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
     REPLICAS = 1                   -- Replication factor for fault tolerance
@@ -33,7 +33,7 @@ SELECT
     T.TXN_TYPE as TXN_TYPE,
     T.UPDATE_TS as TRANS_TS,
     A.UPDATE_TS as ACCOUNT_TS
-FROM CDC_DB_MASTER_ACC_RAW_ST_<USER> A
-INNER JOIN CDC_MF_TXN_STG_ST_<USER> T 
+FROM "CDC-DB-MASTER-ACC-RAW-ST-<USER>" A
+INNER JOIN "CDC-MF-TXN-STG-ST-<USER>" T 
 WITHIN 30 SECONDS  -- Define join window between two streams
 ON A.ACCOUNT_ID = T.ACC_NO;

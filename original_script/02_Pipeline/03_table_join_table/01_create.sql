@@ -1,6 +1,6 @@
 ---Step 1 Create source Table
-CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN_TB_<USER>',   -- Source Kafka topic
+CREATE TABLE "CDC-MF-TXN-STG-PREP-JOIN-TB-<USER>" WITH (
+    KAFKA_TOPIC = 'CDC-MF-TXN-STG-PREP-JOIN-TB-<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
     REPLICAS = 1                         -- Replication factor for fault tolerance
@@ -11,12 +11,12 @@ SELECT
     LATEST_BY_OFFSET(TXN_TYPE) AS LATEST_TXN_TYPE,
     LATEST_BY_OFFSET(TXN_AMT) AS LATEST_TXN_AMT,
     LATEST_BY_OFFSET(TXN_DT) AS LATEST_TXN_DT
-FROM CDC_MF_TXN_STG_ST_<USER>
+FROM "CDC-MF-TXN-STG-ST-<USER>"
 GROUP BY ACC_NO;
 
 ---Step 2 Enrichment Account Table with Transaction Table
-CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER> WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST_<USER>',      -- Source Kafka topic
+CREATE TABLE "CDC-DB-MASTER-ACC-STG-JOIN-TABLE-TABLE-ST-<USER>" WITH (
+  KAFKA_TOPIC = 'CDC-DB-MASTER-ACC-STG-JOIN-TABLE-TABLE-ST-<USER>',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
   REPLICAS = 1                   -- Replication factor for fault tolerance
@@ -28,6 +28,6 @@ SELECT
     T.LATEST_TXN_ID,
     T.LATEST_TXN_AMT,
     T.LATEST_TXN_DT
-FROM CDC_MF_TXN_STG_PREP_JOIN_TB_<USER> T
-LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB_<USER> A 
+FROM "CDC-MF-TXN-STG-PREP-JOIN-TB-<USER>" T
+LEFT JOIN "CDC-DB-MASTER-ACC-RAW-TB-<USER>" A 
 ON T.ACC_NO = A.ACCOUNT_ID;
