@@ -2,7 +2,7 @@
 CREATE STREAM CDC_MF_TXN_RAW_ST_<USER> (
     raw_message VARCHAR  -- Defines the structure of incoming raw messages
 ) WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_<USER>',   -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN_RAW_ST_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'KAFKA',              -- Raw Kafka message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
     REPLICAS = 1                         -- Replication factor for fault tolerance

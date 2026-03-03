@@ -7,7 +7,7 @@ CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB_<USER> (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_RAW_TB_<USER>',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
   REPLICAS = 1                   -- Replication factor for fault tolerance

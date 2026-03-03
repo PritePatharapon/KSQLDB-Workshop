@@ -7,7 +7,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_<USER>',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_RAW_ST_<USER>',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
   REPLICAS = 1                   -- Replication factor for fault tolerance
@@ -17,7 +17,7 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST_<USER> (
 SET 'auto.offset.reset' = 'latest';  -- Ignore existing messages and read new data only
 
 CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER> WITH (
-    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_<USER>', -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST_<USER>', -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
     REPLICAS = 1                   -- Replication factor for fault tolerance
