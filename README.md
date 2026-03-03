@@ -251,7 +251,7 @@ SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 ### Pipeline 2.1: Enrichment Stream with Stream 
 
 <p align="center">
-  <img src="Image/Pipeline2-1-111.drawio.svg" width="800"/>
+  <img src="Image/Pipeline2-1.drawio.svg" width="800"/>
 </p>
 
 
