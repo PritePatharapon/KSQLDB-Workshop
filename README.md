@@ -107,13 +107,13 @@ Aggregate data within time windows for real-time analytics.
 
 #### Step 1 Create source stream
 ```sql
-CREATE STREAM CDC_MF_TXN_RAW_ST (
+CREATE STREAM "CDC_MF_TXN_RAW_ST" (
     raw_message VARCHAR  -- Defines the structure of incoming raw messages
 ) WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN',   -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN_RAW_ST',   -- Source Kafka topic
     VALUE_FORMAT = 'KAFKA',              -- Raw Kafka message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 );
 ```
 
@@ -127,12 +127,12 @@ CREATE STREAM CDC_MF_TXN_RAW_ST (
 
 #### Step 2 Transform Data
 ```sql
-CREATE STREAM CDC_MF_TXN_STG_ST
+CREATE STREAM "CDC_MF_TXN_STG_ST"
 WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_ST',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -153,7 +153,7 @@ SELECT
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST
+FROM "CDC_MF_TXN_RAW_ST"
 WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message, '|')[7] != 'Mobile';
 ```
 
@@ -166,12 +166,12 @@ WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message
 
 #### Step 3 Filtering Reject Condition
 ```sql
-CREATE STREAM CDC_MF_TXN_STG_REJ_ST
+CREATE STREAM "CDC_MF_TXN_STG_REJ_ST"
 WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_REJ_ST',  -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -193,7 +193,7 @@ SELECT
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST
+FROM "CDC_MF_TXN_RAW_ST"
 WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
 ```
 
@@ -219,7 +219,7 @@ INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('TXN1001|DEPOSIT|D01|5000.00
 ```
 
 ```sql
--- Scenario 2: Rejected Transaction (Restricted ID '000000' + Mobile) -> Should go ONLY to REJ (Filtered from STG)
+-- Scenario 2: Rejected Transaction (Mobile) -> Should go ONLY to REJ (Filtered from STG)
 INSERT INTO CDC_MF_TXN_RAW_ST (raw_message) VALUES ('000000|TEST|X00|0.00|ACC999|2024-02-09 10:10:00|Mobile|2024-02-09 10:10:05');
 ```
 
@@ -278,7 +278,7 @@ SELECT * FROM CDC_MF_TXN_STG_REJ_ST EMIT CHANGES;
 
 #### Step 1 Create source Stream
 ```SQL
-CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST (
+CREATE STREAM "CDC_DB_MASTER_ACC_RAW_ST" (
   ACCOUNT_ID VARCHAR KEY,
   ACCOUNT_NAME VARCHAR,
   ACCOUNT_BALANCE DOUBLE,
@@ -286,10 +286,10 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_RAW_ST',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 1                   -- Replication factor for fault tolerance
+  REPLICAS = 3                   -- Replication factor for fault tolerance
 );
 ```
 
@@ -305,11 +305,11 @@ CREATE STREAM CDC_DB_MASTER_ACC_RAW_ST (
 ```SQL
 SET 'auto.offset.reset' = 'latest';  -- Ignore existing messages and read new data only
 
-CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST WITH (
-    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM', -- Source Kafka topic
+CREATE STREAM "CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST" WITH (
+    KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST', -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 1                   -- Replication factor for fault tolerance
+    REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
     A.ACCOUNT_ID as ACCOUNT_ID,
@@ -322,8 +322,8 @@ SELECT
     T.TXN_TYPE as TXN_TYPE,
     T.UPDATE_TS as TRANS_TS,
     A.UPDATE_TS as ACCOUNT_TS
-FROM CDC_DB_MASTER_ACC_RAW_ST A
-INNER JOIN CDC_MF_TXN_STG_ST T 
+FROM "CDC_DB_MASTER_ACC_RAW_ST" A
+INNER JOIN "CDC_MF_TXN_STG_ST" T 
 WITHIN 30 SECONDS  -- Define join window between two streams
 ON A.ACCOUNT_ID = T.ACC_NO;
 ```
@@ -397,7 +397,7 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_STREAM_ST EMIT CHANGES;
 
 #### Step 1 Create source Table
 ```SQL
-CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
+CREATE TABLE "CDC_DB_MASTER_ACC_RAW_TB" (
   ACCOUNT_ID VARCHAR PRIMARY KEY,
   ACCOUNT_NAME VARCHAR,
   ACCOUNT_BALANCE DOUBLE,
@@ -405,10 +405,10 @@ CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
   UPDATE_TS TIMESTAMP,
   __OP STRING
 ) WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC',  -- Source Kafka topic
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_RAW_TB',  -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 1                   -- Replication factor for fault tolerance
+  REPLICAS = 3                   -- Replication factor for fault tolerance
 );
 ```
 #### Output:
@@ -421,11 +421,11 @@ CREATE TABLE CDC_DB_MASTER_ACC_RAW_TB (
 
 ```SQL
 ---Step 2 Enrichment Stream with Table
-CREATE STREAM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST WITH (
+CREATE STREAM "CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST" WITH (
   KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 1                   -- Replication factor for fault tolerance
+  REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS 
 SELECT 
     A.ACCOUNT_ID AS JOIN_KEY,
@@ -435,8 +435,8 @@ SELECT
     A.ACCOUNT_NAME AS ACCOUNT_NAME,
     A.ACCOUNT_TYPE AS ACCOUNT_TYPE,
     A.ACCOUNT_BALANCE AS ACCOUNT_BALANCE
-FROM CDC_MF_TXN_STG_ST T
-LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB A    
+FROM "CDC_MF_TXN_STG_ST" T
+LEFT JOIN "CDC_DB_MASTER_ACC_RAW_TB" A    
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
 
@@ -520,11 +520,11 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_STREAM_TABLE_ST EMIT CHANGES;
 
 ``` SQL
 ---Step 1 Create source Table
-CREATE TABLE CDC_MF_TXN_STG_PREP_JOIN_TB WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN',   -- Source Kafka topic
+CREATE TABLE "CDC_MF_TXN_STG_PREP_JOIN_TB" WITH (
+    KAFKA_TOPIC = 'CDC_MF_TXN_STG_PREP_JOIN_TB',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 ) AS
 SELECT
     ACC_NO AS ACC_NO,
@@ -532,7 +532,7 @@ SELECT
     LATEST_BY_OFFSET(TXN_TYPE) AS LATEST_TXN_TYPE,
     LATEST_BY_OFFSET(TXN_AMT) AS LATEST_TXN_AMT,
     LATEST_BY_OFFSET(TXN_DT) AS LATEST_TXN_DT
-FROM CDC_MF_TXN_STG_ST
+FROM "CDC_MF_TXN_STG_ST"
 GROUP BY ACC_NO;
 ```
 
@@ -546,11 +546,11 @@ GROUP BY ACC_NO;
 #### Step 2 Enrichment Account Table with Transaction Table
 ```SQL
 ---Step 2 Enrichment Account Table with Transaction Table
-CREATE TABLE CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST WITH (
-  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE',      -- Source Kafka topic
+CREATE TABLE "CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST" WITH (
+  KAFKA_TOPIC = 'CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 1                   -- Replication factor for fault tolerance
+  REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     A.ACCOUNT_ID,
@@ -559,8 +559,8 @@ SELECT
     T.LATEST_TXN_ID,
     T.LATEST_TXN_AMT,
     T.LATEST_TXN_DT
-FROM CDC_MF_TXN_STG_PREP_JOIN_TB T
-LEFT JOIN CDC_DB_MASTER_ACC_RAW_TB A 
+FROM "CDC_MF_TXN_STG_PREP_JOIN_TB" T
+LEFT JOIN "CDC_DB_MASTER_ACC_RAW_TB" A 
 ON T.ACC_NO = A.ACCOUNT_ID;
 ```
 
@@ -650,7 +650,7 @@ SELECT * FROM CDC_DB_MASTER_ACC_STG_JOIN_TABLE_TABLE_ST EMIT CHANG
 
 #### Step 1 Create source stream
 ```SQL
-CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
+CREATE STREAM "MB_LOGIN_EVENTS_RAW_ST" (
     USER_ID VARCHAR KEY,
     DEVICE_TYPE VARCHAR, -- iOS, Android, Web
     LOGIN_STATUS VARCHAR -- SUCCESS, FAIL
@@ -658,7 +658,7 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
   KAFKA_TOPIC = 'MB_LOGIN_EVENTS_RAW_ST',      -- Source Kafka topic
   FORMAT = 'JSON',               -- JSON message format
   PARTITIONS = 3,                -- Number of partitions for scalability
-  REPLICAS = 1                   -- Replication factor for fault tolerance
+  REPLICAS = 3                   -- Replication factor for fault tolerance
 );
 ```
 #### Output:
@@ -670,18 +670,18 @@ CREATE STREAM MB_LOGIN_EVENTS_RAW_ST (
 
 #### Step 2 Create Aggregation data with Tumbling window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_TUMBLING_ST WITH (
-    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_TUMBLING',      -- Source Kafka topic
+CREATE TABLE "MB_LOGIN_EVENTS_STG_TUMBLING_ST" WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_TUMBLING_ST',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 1                   -- Replication factor for fault tolerance
+    REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM MB_LOGIN_EVENTS_RAW_ST
+FROM "MB_LOGIN_EVENTS_RAW_ST"
 WINDOW TUMBLING (SIZE 30 SECONDS)
 GROUP BY USER_ID;
 ```
@@ -740,18 +740,18 @@ SELECT * FROM MB_LOGIN_EVENTS_STG_TUMBLING_ST WHERE USER_ID = 'USER04';
 
 #### Step 4 Create Aggregation data with Hopping window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_HOPPING_TB WITH (
-    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING',      -- Source Kafka topic
+CREATE TABLE "MB_LOGIN_EVENTS_STG_HOPPING_TB" WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_HOPPING_TB',      -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 1                   -- Replication factor for fault tolerance
+    REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM MB_LOGIN_EVENTS_RAW_ST
+FROM "MB_LOGIN_EVENTS_RAW_ST"
 WINDOW HOPPING (SIZE 30 SECONDS, ADVANCE BY 10 SECONDS)
 GROUP BY USER_ID;
 ```
@@ -822,21 +822,20 @@ SELECT * FROM MB_LOGIN_EVENTS_STG_HOPPING_TB WHERE USER_ID = 'USER02';
 
 #### Step 6 Create Aggregation data with Session window
 ```SQL
-CREATE TABLE MB_LOGIN_EVENTS_STG_SESSION_TB WITH (
-    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION',    -- Source Kafka topic
+CREATE TABLE "MB_LOGIN_EVENTS_STG_SESSION_TB" WITH (
+    KAFKA_TOPIC = 'MB_LOGIN_EVENTS_STG_SESSION_TB',    -- Source Kafka topic
     FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                -- Number of partitions for scalability
-    REPLICAS = 1                   -- Replication factor for fault tolerance
+    REPLICAS = 3                   -- Replication factor for fault tolerance
 ) AS
 SELECT
     USER_ID,
     COUNT(*) AS LOGIN_COUNT,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC+7') AS START_TIME,
     TIMESTAMPTOSTRING(WINDOWEND, 'HH:mm:ss', 'UTC+7') AS END_TIME
-FROM MB_LOGIN_EVENTS_RAW_ST
+FROM "MB_LOGIN_EVENTS_RAW_ST"
 WINDOW SESSION (30 SECONDS)
 GROUP BY USER_ID;
-
 ```
 #### Output:
 
