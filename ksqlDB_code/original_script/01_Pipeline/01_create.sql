@@ -1,20 +1,20 @@
 --- Step 1: Create Source Stream
-CREATE STREAM CDC_MF_TXN_RAW_ST_<USER> (
+CREATE STREAM "CDC_MF_TXN_RAW_ST_<USER>" (
     raw_message VARCHAR  -- Defines the structure of incoming raw messages
 ) WITH (
-    KAFKA_TOPIC = 'CDC_MF_TXN_<USER>',   -- Source Kafka topic
+    KAFKA_TOPIC = 'CDC_MF_TXN_RAW_ST_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'KAFKA',              -- Raw Kafka message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 );
 
 --- Step 2: Transform Data
-CREATE STREAM CDC_MF_TXN_STG_ST_<USER>
+CREATE STREAM "CDC_MF_TXN_STG_ST_<USER>"
 WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_ST_<USER>',   -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -35,16 +35,16 @@ SELECT
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST_<USER>
+FROM "CDC_MF_TXN_RAW_ST_<USER>"
 WHERE SPLIT(raw_message, '|')[1] NOT IN ('000000','999999') OR SPLIT(raw_message, '|')[7] != 'Mobile';
 
 --- Step 3 Filtering Reject Condition
-CREATE STREAM CDC_MF_TXN_STG_REJ_ST_<USER>
+CREATE STREAM "CDC_MF_TXN_STG_REJ_ST_<USER>"
 WITH (
     KAFKA_TOPIC = 'CDC_MF_TXN_STG_REJ_ST_<USER>',  -- Source Kafka topic
     VALUE_FORMAT = 'JSON',               -- JSON message format
     PARTITIONS = 3,                      -- Number of partitions for scalability
-    REPLICAS = 1                         -- Replication factor for fault tolerance
+    REPLICAS = 3                         -- Replication factor for fault tolerance
 ) AS
 
 SELECT
@@ -66,5 +66,5 @@ SELECT
     SPLIT(raw_message, '|')[7] AS CHANNEL,
     SPLIT(raw_message, '|')[8] AS UPDATE_TS
 
-FROM CDC_MF_TXN_RAW_ST_<USER>
+FROM "CDC_MF_TXN_RAW_ST_<USER>"
 WHERE SPLIT(raw_message, '|')[7] = 'Mobile';
